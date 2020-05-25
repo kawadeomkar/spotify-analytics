@@ -3,11 +3,13 @@ version: '3'
 services:
   flask_spotify:
     container_name: flask_spotify
+    env_file:
+      - flask_spotify/.env
     restart: always
     build: ./flask_spotify
     ports:
       - "8000:8000"
-    command: gunicorn -w 3 --threads 2 -b 0.0.0.0:8000 wsgi:server
+    command: gunicorn -w 3 --threads 2 -b 0.0.0.0:8000 wsgi:app
 
   nginx:
     container_name: nginx
