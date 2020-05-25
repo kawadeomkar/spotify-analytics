@@ -1,6 +1,7 @@
 from flask import Flask, redirect, request, session, url_for
 
 import auth
+import json
 import logging
 import os
 import playlist_genre_map
@@ -23,21 +24,20 @@ def SpotifyAnalytics():
 				f"""&redirect_uri={os.environ["SPOTIPY_REDIRECT_URI"]}"""
 				f"""&scope={scope}"""
 			)
-		logging.error("302 REDIRECT / : ", spotify_auth_redir)
+		logging.info("302 REDIRECT / : ", spotify_auth_redir)
 		return redirect(spotify_auth_redir)
 
 	Spotify = spotipy.Spotify(auth=session["access_token"])
-	result = Spotify.current_user_saved_tracks(limit=1)
-	import json
-	return json.dumps(result)
+	tracks = playlist_genre_map.likedSongsGenreMap(Spotify)
+	
+	return json.dumps(tracks)
 
 @app.route('/callback/')
 def callback():
-	print(os.environ["AUTH_URL"])
 	auth_details = auth.getSpotifyAuthToken(request.args.get('code'))
+
 	session['access_token'] = auth_details['access_token']
 	session['expires_in'] = auth_details['expires_in'] + int(time.time())
-	print("access token=", session['access_token'])
 	return redirect(url_for('SpotifyAnalytics'))
 
 app.route('/playlist')
