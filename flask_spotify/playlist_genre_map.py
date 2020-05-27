@@ -5,6 +5,7 @@ from itertools import chain
 import json
 import spotipy
 
+
 @lru_cache(maxsize=100)
 def getArtistGenres(spotify, artist_id):
 	res = spotify.artist(artist_id)
@@ -26,15 +27,12 @@ def likedSongsGenreMap(spotify):
 		tracks.extend(rest)	
 	
 	genre_map = {}
-
 	for track in tracks:
 		track = track['track']
 		for genre in getArtistGenres(spotify, track['artists'][0]['id']):	
 			if not genre in genre_map:
 				genre_map[genre] = []
 			genre_map[genre].append(track['id'])
-	
-	
 	return genre_map
 	
 	

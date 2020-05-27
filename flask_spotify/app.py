@@ -1,4 +1,4 @@
-from flask import Flask, redirect, request, session, url_for
+from flask import Flask, redirect, render_template, request, session, url_for
 
 import auth
 import json
@@ -29,8 +29,11 @@ def SpotifyAnalytics():
 
 	Spotify = spotipy.Spotify(auth=session["access_token"])
 	tracks = playlist_genre_map.likedSongsGenreMap(Spotify)
-	
-	return json.dumps(tracks)
+
+	genre_counts = [{'genre': k, 'size': len(v)} for k, v in tracks.items()]
+	return render_template('playlist_generator_grid.html', 
+		page_title='Spotify Analytics - Playlist Generator',
+		genre_counts=genre_counts)
 
 @app.route('/callback/')
 def callback():

@@ -1,0 +1,96 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #121212;
+}
+
+#grid {
+    display: flex;
+    flex-flow: row wrap;
+    
+    &:hover .content {
+        opacity: 0.6;
+    }
+
+    .col {
+        flex-grow: 1;
+        min-width: 200px;
+        padding: 2px;
+
+        article {
+            background: #fff;
+            height: 198px;
+
+            .content {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                width: 100%;
+                height: 100%;
+                position: relative;
+                overflow: hidden;
+                transition: all .5s linear;
+                transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
+
+                .bg {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    background: #FFF;
+                    margin-left: 4px;
+                    margin-top: 4px;
+                    width: calc(100% - 8px);
+                    height: calc(100% - 8px);
+                    transition: all .2s linear;
+                    transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
+                }
+
+                h1{
+                    position: absolute;
+                    bottom: 150%;
+                    left: 0;
+                    padding: 20px;
+                    background: #fff;
+                    color: black;
+                    font-family: sans-serif;
+                    text-transform: uppercase;
+                    transition: all .2s linear;
+                    transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
+                }
+
+                &:hover {
+                    opacity: 1;
+                    
+                    .bg{
+                        margin-left: 15px;
+                        margin-top: 15px;
+                        width: calc(100% - 30px);
+                        height: calc(100% - 30px);
+                    }
+
+                    h1{
+                        bottom: 10%;
+                    }
+                }
+            }
+        }
+
+        article:nth-child(2) {
+            margin-top: 4px;
+        }
+
+        .big {
+            height: 400px;
+            min-width: 400px;
+        }
+    }
+}
+
+@media all and (max-width: 429px) {
+    article {
+        min-width: 200px !important;
+    }
+}
