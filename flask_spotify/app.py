@@ -29,7 +29,10 @@ def SpotifyAnalytics():
 
 	Spotify = spotipy.Spotify(auth=session["access_token"])
 	tracks = playlist_genre_map.likedSongsGenreMap(Spotify)
-	genre_counts = {k:len(v) for k, v in tracks.items()}
+	genre_objs = [{"Name":k, "Count":len(v)} for k, v in tracks.items()]
+	genre_counts = {
+		"children":genre_objs
+	}  
 	
 	return render_template('playlist_generator_grid.html', 
 		page_title='Spotify Analytics - Playlist Generator',
@@ -43,11 +46,11 @@ def callback():
 	session['expires_in'] = auth_details['expires_in'] + int(time.time())
 	return redirect(url_for('SpotifyAnalytics'))
 
-app.route('/playlist')
+@app.route('/playlist', methods=['POST'])
 def playlist():
 	Spotify = spotipy.Spotify(auth=session["access_token"])
-	result = Spotify.current_user_saved_tracks()
-	
-
+	jsonObj = request.get_json()
+	print(jsonObj, type(jsonObj))
+	return {} 
 
 
