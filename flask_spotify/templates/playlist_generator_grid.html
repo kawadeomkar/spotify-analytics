@@ -7,9 +7,24 @@
     <script src="{{ url_for('static', filename='bower_components/bootstrap/dist/js/bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='bower_components/d3/d3.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/playlist_generator_grid.js') }}"></script>
-</head>
+</head
+<body>
+Spotify Analytics
+<div id="genres_test">
+
+</div>
+
 <div class="container">
 	<div id="chart"></div>
 </div>
-
+	<script>
+		console.log("GENREe COUNTS");
+		console.log({{genre_counts | tojson | safe}});
+		var genre_counts = JSON.parse('{{ genre_counts | tojson | safe }}');
+		for (var genre in genre_counts) {
+			$("#genres_test").append( '<p>' + genre + " : " + genre_counts[genre] + '</p>' ); 
+		}
+		console.log(genre_counts);
+	</script>
+</body>
 </html>

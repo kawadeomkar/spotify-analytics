@@ -29,8 +29,8 @@ def SpotifyAnalytics():
 
 	Spotify = spotipy.Spotify(auth=session["access_token"])
 	tracks = playlist_genre_map.likedSongsGenreMap(Spotify)
-
-	genre_counts = [{'genre': k, 'size': len(v)} for k, v in tracks.items()]
+	genre_counts = {k:len(v) for k, v in tracks.items()}
+	
 	return render_template('playlist_generator_grid.html', 
 		page_title='Spotify Analytics - Playlist Generator',
 		genre_counts=genre_counts)
