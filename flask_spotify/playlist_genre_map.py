@@ -21,7 +21,7 @@ def likedSongsGenreMap(spotify):
 	if total > 50:
 		rest = list(map(
 			lambda x: (spotify.current_user_saved_tracks(limit=50, offset=x)['items']),
-			list(range(50, 150, 50))
+			list(range(50, total, 50))
 		))
 		rest = list(chain.from_iterable(rest))
 		tracks.extend(rest)	
