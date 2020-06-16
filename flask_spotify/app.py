@@ -29,7 +29,6 @@ def SpotifyAnalytics():
 
 	Spotify = spotipy.Spotify(auth=session['access_token'])
 	if session.get('genre_map', None) == None:
-		print('genre_map not in session')
 		tracks = playlist_genre_map.likedSongsGenreMap(Spotify)
 		genre_objs = [{'Name':k, 'Count':len(v)} for k, v in tracks.items()]
 		session['genre_map'] = genre_objs
@@ -37,7 +36,6 @@ def SpotifyAnalytics():
 	genre_counts = {
 		"children":session['genre_map']
 	}  
-	print(genre_counts)
 	
 	return render_template('playlist_generator_grid.html', 
 		page_title='Spotify Analytics - Playlist Generator',
@@ -55,10 +53,7 @@ def callback():
 def playlist():
 	Spotify = spotipy.Spotify(auth=session["access_token"])
 	genre = request.get_json()['Name']
-	print(session.items())
-	print('SONGS BABY')
 	songs = session['genre_map'][session['genre_index'][genre]] #[genre]]['Songs']
-	print(songs)
 	
 	return render_template('playlist.html', songs=songs, genre=genre) 
 
