@@ -1,16 +1,16 @@
 # Liked songs library grouped by genre 
 from functools import lru_cache
 from itertools import chain
+from util import getLogger
 
 import json
 import spotipy
 
+logger = getLogger(__name__)
 
 @lru_cache(maxsize=100)
 def getArtistGenres(spotify, artist_id):
 	res = spotify.artist(artist_id)
-	print(artist_id, res)
-	print(res['genres'])
 	return res['genres']
 
 def likedSongsGenreMap(spotify):
