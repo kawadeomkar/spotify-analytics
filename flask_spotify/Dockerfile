@@ -4,3 +4,5 @@ WORKDIR usr/src/flask_app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
+
+ENV WSGI_SECRET_KEY "super_secret_key"

@@ -27,12 +27,17 @@ def SpotifyAnalytics():
 		logging.info("302 REDIRECT / : ", spotify_auth_redir)
 		return redirect(spotify_auth_redir)
 
-	Spotify = spotipy.Spotify(auth=session["access_token"])
-	tracks = playlist_genre_map.likedSongsGenreMap(Spotify)
-	genre_objs = [{"Name":k, "Count":len(v)} for k, v in tracks.items()]
+	Spotify = spotipy.Spotify(auth=session['access_token'])
+	if session.get('genre_map', None) == None:
+		print('genre_map not in session')
+		tracks = playlist_genre_map.likedSongsGenreMap(Spotify)
+		genre_objs = [{'Name':k, 'Count':len(v)} for k, v in tracks.items()]
+		session['genre_map'] = genre_objs
+		session['genre_index'] = tracks
 	genre_counts = {
-		"children":genre_objs
+		"children":session['genre_map']
 	}  
+	print(genre_counts)
 	
 	return render_template('playlist_generator_grid.html', 
 		page_title='Spotify Analytics - Playlist Generator',
@@ -49,8 +54,17 @@ def callback():
 @app.route('/playlist', methods=['POST'])
 def playlist():
 	Spotify = spotipy.Spotify(auth=session["access_token"])
-	jsonObj = request.get_json()
-	print(jsonObj, type(jsonObj))
-	return {} 
+	genre = request.get_json()['Name']
+	print(session.items())
+	print('SONGS BABY')
+	songs = session['genre_map'][session['genre_index'][genre]] #[genre]]['Songs']
+	print(songs)
+	
+	return render_template('playlist.html', songs=songs, genre=genre) 
 
 
+@app.route('/export', methods=['POST'])
+def export():
+	genre = request.form['export']
+	pass
+	
