@@ -1,4 +1,5 @@
 from flask import Flask, redirect, render_template, request, session, url_for
+from flask_session import Session
 from util import getLogger
 
 import auth
@@ -6,15 +7,22 @@ import json
 import logging
 import os
 import playlist_genre_map
+import redis
 import spotipy
 import time
 
 
 app = Flask(__name__)
-app.secret_key = os.environ["WSGI_SECRET_KEY"]
-Spotify = None
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_REDIS'] = redis.from_url(os.environ['redis_host']
+app.secret_key = os.environ['WSGI_SECRET_KEY']
 
-logger = getLogger(__name__)
+ses = Session()
+ses.init_app(app)
+
+Spotify = None
+getLogger(__name__)
+
 
 @app.route('/')
 def SpotifyAnalytics():
@@ -31,11 +39,11 @@ def SpotifyAnalytics():
 		return redirect(spotify_auth_redir)
 
 	Spotify = spotipy.Spotify(auth=session['access_token'])
-	if session.get('genre_map', None) == None:
-		logger.info('Genre map not found in session, querying Spotify API')
+	if temp_session.get('genre_map', None) == None:
+		logging.info('Genre map not found in session, querying Spotify API')
 		tracks = playlist_genre_map.likedSongsGenreMap(Spotify)
 		genre_objs = [{'Name':k, 'Count':len(v)} for k, v in tracks.items()]
-		session['genre_map'] = genre_objs
+		temp_sessions[] = ['genre_map'] = genre_objs
 		session['genre_index'] = tracks
 	genre_counts = {
 		"children":session['genre_map']
@@ -57,6 +65,7 @@ def callback():
 def playlist():
 	Spotify = spotipy.Spotify(auth=session["access_token"])
 	genre = request.get_json()['Name']
+
 	songs = session['genre_map'][session['genre_index'][genre]] #[genre]]['Songs']
 	
 	return render_template('playlist.html', songs=songs, genre=genre) 
