@@ -1,6 +1,15 @@
 version: '3'
 
 services:
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+    volumes:
+     - ./config/redis.conf:/usr/local/etc/redis/redis.conf
+    restart: always
+    container_name: redis
+
   flask_spotify:
     container_name: flask_spotify
     env_file:
