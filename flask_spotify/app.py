@@ -1,5 +1,4 @@
 from flask import Flask, redirect, render_template, request, session, url_for
-from flask_session import Session
 from util import getLogger
 
 import auth
@@ -39,6 +38,8 @@ def SpotifyAnalytics():
 		return redirect(spotify_auth_redir)
 
 	Spotify = spotipy.Spotify(auth=session['access_token'])
+	user_id = Spotify.current_user()['id']
+	print(user)
 	if session.get('genre_map', None) == None:
 		logging.info('Genre map not found in session, querying Spotify API')
 		tracks = playlist_genre_map.likedSongsGenreMap(Spotify)

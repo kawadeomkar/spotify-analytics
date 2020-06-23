@@ -8,6 +8,8 @@ services:
     volumes:
      - ./config/redis.conf:/redis.conf
     restart: always
+    env_file:
+      - config/.env
     container_name: redis
     command: ["redis-server", "/redis.conf"]
 

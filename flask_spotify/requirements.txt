@@ -1,5 +1,4 @@
 Flask==1.1.1
-Flask-Session==0.3.2
 gunicorn==19.10.0
 redis==3.5.3
 spotipy==2.12.0
