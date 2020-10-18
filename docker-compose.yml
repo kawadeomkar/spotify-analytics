@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   redis:
@@ -20,8 +20,9 @@ services:
     restart: always
     build: ./flask_spotify
     ports:
-      - "8000:8000"
-    command: gunicorn -w 3 --threads 2 -b 0.0.0.0:8000 wsgi:app
+      - "5000:5000"
+    command: gunicorn -w 3 --threads 2 -b 0.0.0.0:5000 wsgi:app
+    network_mode: "host"
 
   nginx:
     container_name: nginx
