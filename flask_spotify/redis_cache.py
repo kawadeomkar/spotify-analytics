@@ -1,4 +1,4 @@
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Set
 
 import redis
 import util
@@ -34,6 +34,16 @@ def set_expire_to_access_token(access_token: str, key: str) -> bool:
     return client.expire(key, ttl)
 
 
+# generic set
+def set_spotify_track(track_id: str, track_name: str) -> bool:
+    return client.set(track_id, track_name)
+
+
+# generic get
+def get_spotify_track_name(track_id: str) -> str:
+    return client.get(track_id)
+
+
 def set_user_genres(access_token: str, genres: List[str]) -> None:
     client.sadd(access_token + "genre", *genres)
     set_expire_to_access_token(access_token, access_token + "genre")
@@ -56,3 +66,7 @@ def set_user_genre_track_count(access_token: str, genre_track_map: Dict[str, Lis
 
 def get_user_genre_track_count(access_token: str) -> Dict[str, str]:
     return client.hgetall(access_token + 'gtc')
+
+
+def get_genre_tracks(access_token: str, genre: str) -> Union[Set[str], Set[None]]:
+    return client.smembers(access_token + genre)

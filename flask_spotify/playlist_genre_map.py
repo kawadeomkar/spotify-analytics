@@ -3,6 +3,7 @@ from functools import lru_cache
 from itertools import chain
 from typing import Dict, List
 
+import redis_cache
 import spotipy
 import util
 
@@ -49,6 +50,11 @@ def get_track_genres(spotify: spotipy.client,
 
 
 def likedSongsGenreMap(spotify: spotipy.client) -> Dict[str, List[str]]:
+    """
+    Extracts artist and album id from each saved track and attempts to grab all related genres. Each
+    track is then associated with 0 or more genres.
+    Sets each spotify track id to its name in redis, default (none) TTL expiry
+    """
     result = spotify.current_user_saved_tracks(limit=50, offset=0)
     tracks = result['items']
     # total = result['total'] TODO: Testing, currently capping at 100
@@ -68,6 +74,10 @@ def likedSongsGenreMap(spotify: spotipy.client) -> Dict[str, List[str]]:
     for track in tracks:
         track_obj = track['track']
 
+        # save song track name to redis
+        redis_cache.set_spotify_track(track_obj['id'], track_obj['name'])
+
+        # extract genres
         artist_ids = [artist['id'] for artist in track_obj['artists']]
         album_id = track_obj['album']['id']
         genres = get_track_genres(spotify, artist_ids=artist_ids, album_id=album_id)

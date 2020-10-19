@@ -77,12 +77,15 @@ def playlist():
         return redirect(validate)
 
     access_token = session['access_token']
-    spotify = spotipy.Spotify(auth=access_token)
-
     genre = request.get_json()['Name']
-    songs = session['genre_map'][session['genre_index'][genre]]  # [genre]]['Songs']
+    songs = redis_cache.get_genre_tracks(access_token, genre)
+    song_id_name_map = [
+        {'song_name': redis_cache.get_spotify_track_name(t_id),
+         'track_id': t_id}
+        for t_id in songs
+    ]
 
-    return render_template('playlist.html', songs=songs, genre=genre)
+    return render_template('playlist_list.html', song_id_name_map=song_id_name_map, genre=genre)
 
 
 @app.route('/export', methods=['POST'])

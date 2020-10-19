@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Playlist list</title>
+</head>
+<body>
+<div id="playlist">
+    <h1>{{ genre }}</h1>
+    <ul id="song_list"></ul>
+</div>
+
+<script>
+    console.log({{song_id_name_map | tojson | safe}});
+    var song_id_name_map = JSON.parse('{{ song_id_name_map | tojson | safe }}');
+    $(function() {
+        console.log( {{ genre }} );
+        song_id_name_map.forEach(song => {
+            var ul = document.getElementById("song_list");
+            var li = document.createElement("li");
+            li.appendChild(document.createTextNode(song.song_name));
+            ul.appendChild(li);
+        })
+    });
+
+</script>
+</body>
+</html>

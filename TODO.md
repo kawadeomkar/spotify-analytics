@@ -14,6 +14,7 @@ Redis:
 (currently assumes access token is always exists, might want to redir authentication if access token
 expired)
 - Possibly turn this set of functions into a class? Only benefit right now is abstracting `access_token`
+- Consider using hashes (md5) for redis keys
 
 Formatting:
 - Change all functions to underscore delimited from camel case
