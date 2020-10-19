@@ -33,3 +33,15 @@ def getSpotifyAuthToken(code):
             raise Exception
         raise Exception
     return json.loads(post.text)
+
+
+def authenticationRedirectURL(scope: str = None) -> str:
+    if not scope:
+        scope = "user-library-read playlist-modify-public user-top-read"
+    return (
+            f"""{os.environ["AUTH_URL"]}"""
+            f"""client_id={os.environ["SPOTIPY_CLIENT_ID"]}"""
+            f"""&response_type=code"""
+            f"""&redirect_uri={os.environ["SPOTIPY_REDIRECT_URI"]}"""
+            f"""&scope={scope}"""
+        )

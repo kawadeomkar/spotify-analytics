@@ -7,7 +7,7 @@ import logging
 import spotipy
 import util
 
-log = util.getLogger(__name__)
+log = util.setLogger(__name__)
 
 
 @lru_cache(maxsize=100)
@@ -16,7 +16,7 @@ def getArtistGenres(spotify, artist_id):
     return res['genres']
 
 
-def likedSongsGenreMap(spotify):
+def likedSongsGenreMap(spotify: spotipy.client) -> dict:
     result = spotify.current_user_saved_tracks(limit=50, offset=0)
     tracks = result['items']
     # total = result['total'] TODO: Testing, currently capping at 100
@@ -31,11 +31,13 @@ def likedSongsGenreMap(spotify):
         rest = list(chain.from_iterable(rest))
         tracks.extend(rest)
 
+    log.info(tracks)
+
     genre_map = {}
     for track in tracks:
-        track = track['track']
-        for genre in getArtistGenres(spotify, track['artists'][0]['id']):
+        track_obj = track['track']
+        for genre in getArtistGenres(spotify, track_obj['artists'][0]['id']):
             if not genre in genre_map:
                 genre_map[genre] = []
-            genre_map[genre].append(track['id'])
+            genre_map[genre].append(track_obj['id'])
     return genre_map

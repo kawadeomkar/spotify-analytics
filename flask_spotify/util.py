@@ -12,3 +12,5 @@ def setLogger(name: str) -> logging:
     handler.setFormatter(formatter)
     root.addHandler(handler)
     return root
+
+

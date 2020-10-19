@@ -19,31 +19,42 @@ log = util.setLogger(__name__)
 
 @app.route('/')
 def spotify_analytics():
-    if 'access_token' not in session or session.get('expires_in', 0) < int(time.time()):
-        scope = "user-library-read playlist-modify-public user-top-read"
-        spotify_auth_redir = (
-            f"""{os.environ["AUTH_URL"]}"""
-            f"""client_id={os.environ["SPOTIPY_CLIENT_ID"]}"""
-            f"""&response_type=code"""
-            f"""&redirect_uri={os.environ["SPOTIPY_REDIRECT_URI"]}"""
-            f"""&scope={scope}"""
-        )
-        log.info("302 REDIRECT / : ", spotify_auth_redir)
+    if not redis_cache.ping():
+        print("CANT CONNECT TO REDIS")
+
+    if 'access_token' not in session or not redis_cache.user_exists(session['access_token']):
+        spotify_auth_redir = auth.authenticationRedirectURL()
+        log.info(f"302 REDIRECT, User needs to authenticate, redirect: {spotify_auth_redir}")
         return redirect(spotify_auth_redir)
 
-    spotify = spotipy.Spotify(auth=session['access_token'])
+    access_token = session['access_token']
+    spotify = spotipy.Spotify(auth=access_token)
     # user_id = spotify.current_user()['id']
 
-    if not redis_cache.user_map_exists():
+    # mapping needed for d3.js
+    genre_map_d3 = {}
+
+    if not redis_cache.user_map_exists(access_token):
         log.info('Genre map not found in redis cache, querying Spotify API')
 
-        tracks = playlist_genre_map.likedSongsGenreMap(spotify)
-        genre_objs = [{'Name': k, 'Count': len(v)} for k, v in tracks.items()]
-        session['genre_map'] = genre_objs
-        session['genre_index'] = tracks
+        genre_track_map = playlist_genre_map.likedSongsGenreMap(spotify)
+
+        log.info("USER MAP", genre_track_map)
+        # map user's saved tracks to redis
+        redis_cache.set_user_genres(access_token, genre_track_map.keys())
+        redis_cache.set_user_genre_tracks(access_token, genre_track_map)
+        redis_cache.set_user_genre_track_count(access_token, genre_track_map)
+
+        genre_map_d3 = [{'Name': genre, 'Count': len(tracks)}
+                        for genre, tracks in genre_track_map.items()]
+    else:
+        # load from redis
+        genre_map_raw = redis_cache.get_user_genre_track_count(access_token)
+        genre_map_d3 = [{'Name': genre, 'Count': int(tracks)}
+                        for genre, tracks in genre_map_raw.items()]
 
     genre_counts = {
-        "children": session['genre_map']
+        "children": genre_map_d3
     }
 
     return render_template('playlist_generator_grid.html',

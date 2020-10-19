@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3'
 
 services:
   redis:
@@ -22,7 +22,6 @@ services:
     ports:
       - "5000:5000"
     command: gunicorn -w 3 --threads 2 -b 0.0.0.0:5000 wsgi:app
-    network_mode: "host"
 
   nginx:
     container_name: nginx
