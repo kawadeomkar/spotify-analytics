@@ -1,15 +1,11 @@
-import redis
 from flask import Flask, redirect, render_template, request, session, url_for
 
 import auth
-import json
-import logging
 import os
 import playlist_genre_map
 import redis_cache
 import spotipy
 import util
-import time
 
 app = Flask(__name__)
 app.secret_key = os.environ['WSGI_SECRET_KEY']
@@ -19,15 +15,15 @@ log = util.setLogger(__name__)
 
 @app.route('/')
 def spotify_analytics():
-    if not redis_cache.ping():
+    if not redis_cache.ping():  # TODO: remove after done with testing
         print("CANT CONNECT TO REDIS")
 
-    if 'access_token' not in session or not redis_cache.user_exists(session['access_token']):
-        spotify_auth_redir = auth.authenticationRedirectURL()
-        log.info(f"302 REDIRECT, User needs to authenticate, redirect: {spotify_auth_redir}")
-        return redirect(spotify_auth_redir)
+    validate = auth.validateAccessToken()
+    if validate:
+        return redirect(validate)
 
     access_token = session['access_token']
+    log.info(f"Access token: {access_token}")
     spotify = spotipy.Spotify(auth=access_token)
     # user_id = spotify.current_user()['id']
 
@@ -39,7 +35,6 @@ def spotify_analytics():
 
         genre_track_map = playlist_genre_map.likedSongsGenreMap(spotify)
 
-        log.info("USER MAP", genre_track_map)
         # map user's saved tracks to redis
         redis_cache.set_user_genres(access_token, genre_track_map.keys())
         redis_cache.set_user_genre_tracks(access_token, genre_track_map)
@@ -77,9 +72,14 @@ def callback():
 
 @app.route('/playlist', methods=['POST'])
 def playlist():
-    spotify = spotipy.Spotify(auth=session["access_token"])
-    genre = request.get_json()['Name']
+    validate = auth.validateAccessToken()
+    if validate:
+        return redirect(validate)
 
+    access_token = session['access_token']
+    spotify = spotipy.Spotify(auth=access_token)
+
+    genre = request.get_json()['Name']
     songs = session['genre_map'][session['genre_index'][genre]]  # [genre]]['Songs']
 
     return render_template('playlist.html', songs=songs, genre=genre)

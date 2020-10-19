@@ -7,7 +7,6 @@ stuff that needs to be done
 Authentication:
 - Add logic for refreshing token in auth.py
 
-
 Redis:
 - Add retry logic (currently expects every transaction is sucessful)
 - Add docstrings for each redis transaction
@@ -15,3 +14,10 @@ Redis:
 (currently assumes access token is always exists, might want to redir authentication if access token
 expired)
 - Possibly turn this set of functions into a class? Only benefit right now is abstracting `access_token`
+
+Formatting:
+- Change all functions to underscore delimited from camel case
+- Try to add typing to all parameters and functions
+
+Playlists:
+- Sort by popularity
