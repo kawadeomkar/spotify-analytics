@@ -115,3 +115,6 @@ def create_playlist(user_id: str,
     )
 
 
+def add_track_to_playlist():
+    pass
+
