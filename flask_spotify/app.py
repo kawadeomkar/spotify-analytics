@@ -2,7 +2,7 @@ from flask import Flask, redirect, render_template, request, session, url_for
 
 import auth
 import os
-import playlist_genre_map
+import playlist
 import redis_cache
 import spotipy
 import util
@@ -33,7 +33,7 @@ def spotify_analytics():
     if not redis_cache.user_map_exists(access_token):
         log.info('Genre map not found in redis cache, querying Spotify API')
 
-        genre_track_map = playlist_genre_map.liked_songs_genre_map(spotify)
+        genre_track_map = playlist.liked_songs_genre_map(spotify)
 
         # map user's saved tracks to redis
         redis_cache.set_user_genres(access_token, genre_track_map.keys())

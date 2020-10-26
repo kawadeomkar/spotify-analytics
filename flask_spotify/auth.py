@@ -44,7 +44,7 @@ def getSpotifyAuthToken(code) -> json:
 
 def authenticationRedirectURL(scope: str = None) -> str:
     if not scope:
-        scope = "user-library-read playlist-modify-public user-top-read"
+        scope = "user-library-read playlist-modify-public playlist-modify-private user-top-read"
     return (
         f"""{os.environ["AUTH_URL"]}"""
         f"""client_id={os.environ["SPOTIPY_CLIENT_ID"]}"""
@@ -59,4 +59,8 @@ def validateAccessToken() -> Union[str, None]:
         spotify_auth_redir = authenticationRedirectURL()
         log.info(f"302 REDIRECT, User needs to authenticate, redirect: {spotify_auth_redir}")
         return spotify_auth_redir
+
+
+def refresh_token():
+    pass
 

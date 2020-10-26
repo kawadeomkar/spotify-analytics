@@ -4,6 +4,7 @@ from itertools import chain
 from typing import Dict, List
 
 import redis_cache
+import requests
 import spotipy
 import util
 
@@ -91,3 +92,26 @@ def liked_songs_genre_map(spotify: spotipy.client) -> Dict[str, List[str]]:
             genre_map[genre].append(track_obj['id'])
 
     return genre_map
+
+
+def create_playlist(user_id: str,
+                    access_token: str,
+                    name: str,
+                    public: bool = True,
+                    description: str = None) -> None:
+    """TODO: playlist returns playlist obj with id"""
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {access_token}"
+    }
+    data = {
+        "public": public,
+        "name": name
+    }
+    requests.post(
+        f"https://api.spotify.com/v1/users/{user_id}/playlists",
+        headers=headers,
+        data=data
+    )
+
+
