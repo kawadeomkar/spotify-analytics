@@ -33,7 +33,7 @@ def spotify_analytics():
     if not redis_cache.user_map_exists(access_token):
         log.info('Genre map not found in redis cache, querying Spotify API')
 
-        genre_track_map = playlist_genre_map.likedSongsGenreMap(spotify)
+        genre_track_map = playlist_genre_map.liked_songs_genre_map(spotify)
 
         # map user's saved tracks to redis
         redis_cache.set_user_genres(access_token, genre_track_map.keys())
@@ -52,7 +52,7 @@ def spotify_analytics():
         "children": genre_map_d3
     }
 
-    return render_template('playlist_generator_grid.html',
+    return render_template('playlist_generator_bubbles.html',
                            page_title='Spotify Analytics - Playlist Generator',
                            genre_counts=genre_counts)
 

@@ -7,7 +7,7 @@ import time
 log = util.setLogger(__name__)
 
 # TODO: ENV host
-client = redis.Redis(host='redis', port=6379, decode_responses=True)
+client = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
 
 # testing

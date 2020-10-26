@@ -42,14 +42,17 @@ def get_track_genres(spotify: spotipy.client,
     if album_id:
         genres.update(get_album_genres(spotify, album_id))
 
-    if genres:res_pos += 1
-    else:res_neg += 1
+    # TODO: remove analysis
+    if genres:
+        res_pos += 1
+    else:
+        res_neg += 1
     print(res_pos, res_neg)
 
     return genres
 
 
-def likedSongsGenreMap(spotify: spotipy.client) -> Dict[str, List[str]]:
+def liked_songs_genre_map(spotify: spotipy.client) -> Dict[str, List[str]]:
     """
     Extracts artist and album id from each saved track and attempts to grab all related genres. Each
     track is then associated with 0 or more genres.
