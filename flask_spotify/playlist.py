@@ -1,6 +1,7 @@
 # Liked songs library grouped by genre 
 from functools import lru_cache
-from itertools import chain
+from itertools import chain, zip_longest
+from requests.exceptions import HTTPError
 from typing import Dict, List
 
 import redis_cache
@@ -94,27 +95,34 @@ def liked_songs_genre_map(spotify: spotipy.client) -> Dict[str, List[str]]:
     return genre_map
 
 
-def create_playlist(user_id: str,
-                    access_token: str,
+def create_playlist(spotify: spotipy.client,
+                    user_id: str,
                     name: str,
                     public: bool = True,
-                    description: str = None) -> None:
-    """TODO: playlist returns playlist obj with id"""
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {access_token}"
-    }
-    data = {
-        "public": public,
-        "name": name
-    }
-    requests.post(
-        f"https://api.spotify.com/v1/users/{user_id}/playlists",
-        headers=headers,
-        data=data
-    )
+                    description: str = '') -> str:
+    """Creates a playlist and returns playlist id"""
+    playlist = spotify.user_playlist_create(user_id, name, public=public, description=description)
+    return playlist['id']
 
 
-def add_track_to_playlist():
-    pass
+def add_tracks_to_playlist(spotify: spotipy.client,
+                           playlist_id: str,
+                           track_ids: List[str],
+                           position: int = 0) -> bool:
+    """Attempts to add tracks to a playlist, if track_ids length is longer than 100,
+    zip_longest is used for performance boost over slicing (matrix transpose on 100 identity refs)
+    TODO: position is not used for now (use later to append based on popularity
+    TODO: retry logic if HTTPError is thrown?"""
+    try:
+        track_len = len(track_ids)
+        if track_len <= 100:
+            spotify.playlist_add_items(playlist_id, track_ids)
+        else:
+            for items in zip_longest(*(iter(track_ids),) * 100):
+                items_filtered = list(filter(None, items))
+                spotify.playlist_add_items(playlist_id, items_filtered)
+        return True
+    except HTTPError as e:
+        log.error(e)
+        return False
 
