@@ -4,8 +4,8 @@ from itertools import chain, zip_longest
 from requests.exceptions import HTTPError
 from typing import Dict, List
 
+import json
 import redis_cache
-import requests
 import spotipy
 import util
 
@@ -79,7 +79,7 @@ def liked_songs_genre_map(spotify: spotipy.client) -> Dict[str, List[str]]:
     for track in tracks:
         track_obj = track['track']
 
-        # save song track name to redis
+        # save song track info to redis
         redis_cache.set_spotify_track(track_obj['id'], track_obj['name'])
 
         # extract genres

@@ -2,8 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <!-- TODO: remove cache refresh-->
-    <meta http-equiv="refresh" content="30">
     <link rel="stylesheet" type="text/css"
           href="{{ url_for('static',filename='css/playlist_generator_grid.css') }}">
     <script src="{{ url_for('static', filename='bower_components/jquery/dist/jquery.min.js') }}"></script>
@@ -67,12 +65,15 @@
         .on("click", function (bubble) {
             console.log(bubble);
             $.ajax({
-                type: "POST",
-                headers: {"Content-Type": "application/json"},
+                type: 'POST',
+                contentType: 'application/json;charset=UTF-8',
                 url: "{{url_for('playlist')}}",
                 data: JSON.stringify({"Name": bubble.data.Name}),
                 success: function (response) {
                     console.log(response);
+                    document.open();
+                    document.write(response);
+                    document.close();
                 },
                 error: function (response, error) {
                     console.log(response);

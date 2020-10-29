@@ -2,7 +2,7 @@ from flask import Flask, redirect, render_template, request, session, url_for
 
 import auth
 import os
-import playlist
+import playlist_helper
 import redis_cache
 import spotipy
 import util
@@ -27,13 +27,10 @@ def spotify_analytics():
     spotify = spotipy.Spotify(auth=access_token)
     # user_id = spotify.current_user()['id']
 
-    # mapping needed for d3.js
-    genre_map_d3 = {}
-
     if not redis_cache.user_map_exists(access_token):
         log.info('Genre map not found in redis cache, querying Spotify API')
 
-        genre_track_map = playlist.liked_songs_genre_map(spotify)
+        genre_track_map = playlist_helper.liked_songs_genre_map(spotify)
 
         # map user's saved tracks to redis
         redis_cache.set_user_genres(access_token, genre_track_map.keys())
@@ -70,7 +67,7 @@ def callback():
     return redirect(url_for('spotify_analytics'))
 
 
-@app.route('/playlist', methods=['POST'])
+@app.route('/playlist', methods=['GET', 'POST'])
 def playlist():
     validate = auth.validateAccessToken()
     if validate:
