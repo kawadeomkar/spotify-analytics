@@ -80,7 +80,14 @@ def liked_songs_genre_map(spotify: spotipy.client) -> Dict[str, List[str]]:
         track_obj = track['track']
 
         # save song track info to redis
-        redis_cache.set_spotify_track(track_obj['id'], track_obj['name'])
+        track_info = {
+            # @Future: Possibly dump all information? (external url, uri)
+            'artists': json.dumps([artist['name'] for artist in track_obj['artists']]),
+            'name': track_obj['name'],
+            'duration': track_obj['duration_ms'],  # in milliseconds
+            'spotify_url': track_obj['external_urls']['spotify']
+        }
+        redis_cache.set_spotify_track(track_obj['id'], track_info)
 
         # extract genres
         artist_ids = [artist['id'] for artist in track_obj['artists']]
@@ -125,4 +132,3 @@ def add_tracks_to_playlist(spotify: spotipy.client,
     except HTTPError as e:
         log.error(e)
         return False
-

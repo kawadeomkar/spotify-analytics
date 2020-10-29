@@ -1,13 +1,16 @@
 from typing import List, Dict, Union, Set
 
+import os
 import redis
-import util
 import time
+import util
 
 log = util.setLogger(__name__)
 
 # TODO: ENV host
-client = redis.Redis(host='localhost', port=6379, decode_responses=True)
+client = redis.Redis(host=os.environ.get('REDIS_HOST', 'localhost'),
+                     port=6379,
+                     decode_responses=True)
 
 
 # testing
@@ -35,13 +38,13 @@ def set_expire_to_access_token(access_token: str, key: str) -> bool:
 
 
 # generic set
-def set_spotify_track(track_id: str, track_name: str) -> bool:
-    return client.set(track_id, track_name)
+def set_spotify_track(track_id: str, track_info: Dict[str, str]) -> bool:
+    return client.hset(track_id, mapping=track_info)
 
 
 # generic get
 def get_spotify_track_name(track_id: str) -> str:
-    return client.get(track_id)
+    return client.hgetall(track_id)
 
 
 def set_user_genres(access_token: str, genres: List[str]) -> None:

@@ -1,6 +1,7 @@
 from flask import Flask, redirect, render_template, request, session, url_for
 
 import auth
+import json
 import os
 import playlist_helper
 import redis_cache
@@ -76,13 +77,13 @@ def playlist():
     access_token = session['access_token']
     genre = request.get_json()['Name']
     songs = redis_cache.get_genre_tracks(access_token, genre)
-    song_id_name_map = [
-        {'song_name': redis_cache.get_spotify_track_name(t_id),
-         'track_id': t_id}
-        for t_id in songs
-    ]
+    song_info_map = [redis_cache.get_spotify_track_name(t_id) for t_id in songs]
 
-    return render_template('playlist_list.html', song_id_name_map=song_id_name_map, genre=genre)
+    # extract artists back to strings
+    for song in song_info_map:
+        song['artists'] = ', '.join(json.loads(song['artists']))
+    print(song_info_map)
+    return render_template('playlist_list.html', song_info_map=song_info_map, genre=genre)
 
 
 @app.route('/export', methods=['POST'])

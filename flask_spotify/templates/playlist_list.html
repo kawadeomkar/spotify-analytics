@@ -8,18 +8,16 @@
 <div id="playlist">
     <h1>{{ genre }}</h1>
     <ul id="song_list"></ul>
-    <h5>{{song_id_name_map | tojson | safe}}</h5>
 </div>
 
 <script>
-    var song_id_name_map = JSON.parse('{{ song_id_name_map | tojson | safe }}');
-    console.log(song_id_name_map)
+    var song_info_map = JSON.parse('{{ song_info_map | tojson | safe }}');
     $(function() {
         console.log( "{{ genre }}" );
-        song_id_name_map.forEach(song => {
+        song_info_map.forEach(song => {
             var ul = document.getElementById("song_list");
             var li = document.createElement("li");
-            li.appendChild(document.createTextNode(song.song_name));
+            li.appendChild(document.createTextNode(song.name + " - " + song.artists));
             ul.appendChild(li);
         })
     });
