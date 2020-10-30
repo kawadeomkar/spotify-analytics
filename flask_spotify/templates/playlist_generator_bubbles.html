@@ -64,10 +64,12 @@
         })
         .on("click", function (bubble) {
             console.log(bubble);
+            window.location.href='playlist/' + bubble.data.Name
+           /* TODO: DEPRECATED: instead of writing html to the document, route to path
             $.ajax({
                 type: 'POST',
                 contentType: 'application/json;charset=UTF-8',
-                url: "{{url_for('playlist')}}",
+                url: "{url_for('playlist')}", took out extra brackets for jinja error
                 data: JSON.stringify({"Name": bubble.data.Name}),
                 success: function (response) {
                     console.log(response);
@@ -80,6 +82,7 @@
                     console.log(error);
                 }
             });
+            */
         });
 
     node.append("text")

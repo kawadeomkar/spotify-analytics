@@ -3,6 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <title>Playlist list</title>
+    <script>
+    var song_info_map = JSON.parse('{{ song_info_map | tojson | safe }}');
+    console.log(song_info_map);
+    console.log( "{{ genre }}" );
+    song_info_map.forEach(song => {
+        var ul = document.getElementById("song_list");
+        var li = document.createElement("li");
+        li.appendChild(document.createTextNode(song.name + " - " + song.artists));
+        ul.appendChild(li);
+    });
+
+    function export_playlist() {
+        $.ajax({
+            type: 'POST',
+            contentType: 'application/json;charset=UTF-8',
+            data: JSON.stringify('{{ genre }}'),
+            url: '{{url_for('export')}}',
+            success: function (response) {
+                console.log(response);
+                document.open();
+                document.write(response);
+                document.close();
+            },
+            error: function (response, error) {
+                console.log(response);
+                console.log(error);
+                document.open();
+                document.write("<p>error exporting playlist</p>")
+            }
+        });
+    }
+</script>
 </head>
 <body>
 <div id="playlist">
@@ -10,18 +42,5 @@
     <ul id="song_list"></ul>
 </div>
 
-<script>
-    var song_info_map = JSON.parse('{{ song_info_map | tojson | safe }}');
-    $(function() {
-        console.log( "{{ genre }}" );
-        song_info_map.forEach(song => {
-            var ul = document.getElementById("song_list");
-            var li = document.createElement("li");
-            li.appendChild(document.createTextNode(song.name + " - " + song.artists));
-            ul.appendChild(li);
-        })
-    });
-
-</script>
 </body>
 </html>

@@ -25,3 +25,6 @@ expired)
 
 ### Features
 - exporting playlist
+
+### General
+- loading page

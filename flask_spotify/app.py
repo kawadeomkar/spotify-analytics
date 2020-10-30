@@ -68,14 +68,13 @@ def callback():
     return redirect(url_for('spotify_analytics'))
 
 
-@app.route('/playlist', methods=['GET', 'POST'])
-def playlist():
+@app.route('/playlist/<string:genre>')
+def playlist(genre):
     validate = auth.validateAccessToken()
     if validate:
         return redirect(validate)
 
     access_token = session['access_token']
-    genre = request.get_json()['Name']
     songs = redis_cache.get_genre_tracks(access_token, genre)
     song_info_map = [redis_cache.get_spotify_track_name(t_id) for t_id in songs]
 
