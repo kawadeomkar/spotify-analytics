@@ -56,7 +56,6 @@ def set_user_genre_tracks(access_token: str, genre_track_map: Dict[str, List[str
     # Don't need to use "set_expire_to_access_token" func here, saving one call per sadd here
     ttl = client.ttl(access_token)
     for genre, track_list in genre_track_map.items():
-        log.info(track_list)
         client.sadd(access_token + genre, *track_list)
         client.expire(access_token + genre, ttl)
 

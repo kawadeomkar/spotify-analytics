@@ -15,16 +15,20 @@ stuff that needs to be done
 expired)
 - Possibly turn this set of functions into a class? Only benefit right now is abstracting `access_token`
 - Consider using hashes (md5) for redis keys
+- dump redis rdb and use to open file
 
 ### Formatting:
 - Change all functions to underscore delimited from camel case
 - Try to add typing to all parameters and functions
 
-### Playlists:
+### Playlists Features
 - Sort by popularity
-
-### Features
+- Play button
+##### Exporting
+- Delete after exporting (in case it was an accident)
 - exporting playlist
+- allow user to name playlist
 
-### General
+### Home Features
 - loading page
+- increase size of bubbles to fit screen

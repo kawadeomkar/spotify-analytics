@@ -81,11 +81,13 @@ def playlist(genre):
     # extract artists back to strings
     for song in song_info_map:
         song['artists'] = ', '.join(json.loads(song['artists']))
-    print(song_info_map)
     return render_template('playlist_list.html', song_info_map=song_info_map, genre=genre)
 
 
 @app.route('/export', methods=['POST'])
 def export():
-    genre = request.form['export']
-    pass
+    # TODO: Implement JS logic to issue error
+    genre = request.get_json()['genre']
+    access_token = session['access_token']
+    print("ACCESS_TOKEN = " + access_token)
+    return genre

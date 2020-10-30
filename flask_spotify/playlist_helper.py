@@ -75,7 +75,6 @@ def liked_songs_genre_map(spotify: spotipy.client) -> Dict[str, List[str]]:
         tracks.extend(rest)
 
     genre_map = {}
-    log.info("TRACKS: ", tracks)
     for track in tracks:
         track_obj = track['track']
 

@@ -3,42 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <title>Playlist list</title>
+    <script src="{{ url_for('static', filename='bower_components/jquery/dist/jquery.min.js') }}"></script>
     <script>
-    var song_info_map = JSON.parse('{{ song_info_map | tojson | safe }}');
-    console.log(song_info_map);
-    console.log( "{{ genre }}" );
-    song_info_map.forEach(song => {
-        var ul = document.getElementById("song_list");
-        var li = document.createElement("li");
-        li.appendChild(document.createTextNode(song.name + " - " + song.artists));
-        ul.appendChild(li);
-    });
-
-    function export_playlist() {
-        $.ajax({
-            type: 'POST',
-            contentType: 'application/json;charset=UTF-8',
-            data: JSON.stringify('{{ genre }}'),
-            url: '{{url_for('export')}}',
-            success: function (response) {
-                console.log(response);
-                document.open();
-                document.write(response);
-                document.close();
-            },
-            error: function (response, error) {
-                console.log(response);
-                console.log(error);
-                document.open();
-                document.write("<p>error exporting playlist</p>")
-            }
+        let song_info_map = JSON.parse('{{ song_info_map | tojson | safe }}');
+        console.log(song_info_map);
+        console.log( "{{ genre }}" );
+        $( function () {
+            song_info_map.forEach(song => {
+                let ul = document.getElementById("song_list");
+                let li = document.createElement("li");
+                let node = document.createTextNode(song.name + " - " + song.artists);
+                li.appendChild(node);
+                ul.appendChild(li);
+            });
         });
-    }
-</script>
+
+        function export_playlist() {
+            $.ajax({
+                type: 'POST',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({'genre': '{{ genre }}'}),
+                url: '{{url_for('export')}}',
+                success: function (response) {
+                    console.log(response);
+                    document.getElementById('export_playlist').remove();
+                    let export_resp_tag = document.createElement('h4');
+                    export_resp_tag.innerHTML = 'Exported playlist {{ genre }} to spotify'
+                    document.getElementById('export_button').appendChild(export_resp_tag);
+                },
+                error: function (response, error) {
+                    console.log(response);
+                    console.log(error);
+                    alert('Error exporting playlist');
+                }
+            });
+        }
+    </script>
 </head>
 <body>
-<div id="playlist">
-    <h1>{{ genre }}</h1>
+
+<h1>{{ genre }}</h1>
+
+<div id="export_button">
+    <button id="export_playlist" onclick="export_playlist()">Export to Spotify</button>
+</div>
+
+<div id="playlist_div">
     <ul id="song_list"></ul>
 </div>
 
