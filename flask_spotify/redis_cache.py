@@ -70,5 +70,5 @@ def get_user_genre_track_count(access_token: str) -> Dict[str, str]:
     return client.hgetall(access_token + 'gtc')
 
 
-def get_genre_tracks(access_token: str, genre: str) -> Union[Set[str], Set[None]]:
+def get_user_genre_tracks(access_token: str, genre: str) -> Union[Set[str], Set[None]]:
     return client.smembers(access_token + genre)

@@ -75,7 +75,7 @@ def playlist(genre):
         return redirect(validate)
 
     access_token = session['access_token']
-    songs = redis_cache.get_genre_tracks(access_token, genre)
+    songs = redis_cache.get_user_genre_tracks(access_token, genre)
     song_info_map = [redis_cache.get_spotify_track_name(t_id) for t_id in songs]
 
     # extract artists back to strings
@@ -87,7 +87,18 @@ def playlist(genre):
 @app.route('/export', methods=['POST'])
 def export():
     # TODO: Implement JS logic to issue error
+    validate = auth.validateAccessToken()
+    if validate:
+        return redirect(validate)
+
     genre = request.get_json()['genre']
     access_token = session['access_token']
-    print("ACCESS_TOKEN = " + access_token)
+    spotify = spotipy.Spotify(auth=access_token)
+
+    # TODO: User sets the genre name
+    playlist_id = playlist_helper.create_playlist(spotify, genre)
+    genres_to_export = redis_cache.get_user_genre_tracks(access_token, genre)
+    # TODO: retry logic in this function? display error if false
+    ret = playlist_helper.add_tracks_to_playlist(spotify, playlist_id, genres_to_export)
+
     return genre

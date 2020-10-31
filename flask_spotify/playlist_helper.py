@@ -2,7 +2,7 @@
 from functools import lru_cache
 from itertools import chain, zip_longest
 from requests.exceptions import HTTPError
-from typing import Dict, List
+from typing import Dict, List, Set
 
 import json
 import redis_cache
@@ -102,18 +102,19 @@ def liked_songs_genre_map(spotify: spotipy.client) -> Dict[str, List[str]]:
 
 
 def create_playlist(spotify: spotipy.client,
-                    user_id: str,
                     name: str,
                     public: bool = True,
-                    description: str = '') -> str:
+                    description: str = 'This playlist was curated by SpotifyAnalytics '
+                                       'https://github.com/kawadeomkar/spotify-analytics') -> str:
     """Creates a playlist and returns playlist id"""
+    user_id = spotify.me()['id']
     playlist = spotify.user_playlist_create(user_id, name, public=public, description=description)
     return playlist['id']
 
 
 def add_tracks_to_playlist(spotify: spotipy.client,
                            playlist_id: str,
-                           track_ids: List[str],
+                           track_ids: Set[str],
                            position: int = 0) -> bool:
     """Attempts to add tracks to a playlist, if track_ids length is longer than 100,
     zip_longest is used for performance boost over slicing (matrix transpose on 100 identity refs)
@@ -127,6 +128,7 @@ def add_tracks_to_playlist(spotify: spotipy.client,
             for items in zip_longest(*(iter(track_ids),) * 100):
                 items_filtered = list(filter(None, items))
                 spotify.playlist_add_items(playlist_id, items_filtered)
+
         return True
     except HTTPError as e:
         log.error(e)
