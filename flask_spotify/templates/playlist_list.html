@@ -4,18 +4,51 @@
     <meta charset="UTF-8">
     <title>Playlist list</title>
     <script src="{{ url_for('static', filename='bower_components/jquery/dist/jquery.min.js') }}"></script>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <script>
         let song_info_map = JSON.parse('{{ song_info_map | tojson | safe }}');
+        let device_id = '{{ d_id }}';
+        let devices =  JSON.parse('{{ devices | tojson | safe }}');
+
         console.log(song_info_map);
         console.log( "{{ genre }}" );
         $( function () {
+            // load playlist
             song_info_map.forEach(song => {
-                let ul = document.getElementById("song_list");
                 let li = document.createElement("li");
                 let node = document.createTextNode(song.name + " - " + song.artists);
                 li.appendChild(node);
-                ul.appendChild(li);
+                document.getElementById("song_list").appendChild(li);
             });
+
+            // load devices
+            var device_name;
+            var device_type;
+
+            devices.forEach(device => {
+                let li = document.createElement("li");
+                let node = document.createTextNode(device.name + " - " + device.type);
+                li.appendChild(node);
+                document.getElementById("device_list").append(li);
+
+                console.log(device_id + " " + device.id);
+                if (device_id === device.id) {
+                    device_name = device.name;
+                    device_type = device.type;
+                }
+            });
+
+            if (device_id != null) {
+                let curr_device = document.createElement('h4');
+                let device_header = document.createElement('h2');
+                device_header.innerHTML = 'Devices';
+                curr_device.innerHTML = 'Current Device: ' + device_name + " - " + device_type;
+                curr_device.id = 'curr_device';
+
+                document.getElementById("devices").prepend(device_header);
+                document.getElementById("device").append(curr_device);
+            }
+
         });
 
         function export_playlist() {
@@ -38,6 +71,36 @@
                 }
             });
         }
+
+        window.onSpotifyWebPlaybackSDKReady = () => {
+            const token = '{{ access_token }}';
+            const player = new Spotify.Player({
+                name: 'Web Playback SDK Quick Start Player',
+                getOAuthToken: cb => { cb(token); }
+            });
+
+            // Error handling
+            player.addListener('initialization_error', ({ message }) => { console.error(message); });
+            player.addListener('authentication_error', ({ message }) => { console.error(message); });
+            player.addListener('account_error', ({ message }) => { console.error(message); });
+            player.addListener('playback_error', ({ message }) => { console.error(message); });
+
+            // Playback status updates
+            player.addListener('player_state_changed', state => { console.log(state); });
+
+            // Ready
+            player.addListener('ready', ({ device_id }) => {
+              console.log('Ready with Device ID', device_id);
+            });
+
+            // Not Ready
+            player.addListener('not_ready', ({ device_id }) => {
+              console.log('Device ID has gone offline', device_id);
+            });
+
+            // Connect to the player!
+            player.connect();
+    };
     </script>
 </head>
 <body>
@@ -46,6 +109,10 @@
 
 <div id="export_button">
     <button id="export_playlist" onclick="export_playlist()">Export to Spotify</button>
+</div>
+
+<div id="devices">
+    <ul id="device_list"></ul>
 </div>
 
 <div id="playlist_div">

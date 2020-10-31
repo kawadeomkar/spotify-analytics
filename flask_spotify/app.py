@@ -3,6 +3,7 @@ from flask import Flask, redirect, render_template, request, session, url_for
 import auth
 import json
 import os
+import player
 import playlist_helper
 import redis_cache
 import spotipy
@@ -78,10 +79,15 @@ def playlist(genre):
     songs = redis_cache.get_user_genre_tracks(access_token, genre)
     song_info_map = [redis_cache.get_spotify_track_name(t_id) for t_id in songs]
 
+    spotify = spotipy.Spotify(auth=access_token)
+    d_id, devices = player.get_device_info(spotify)
+
     # extract artists back to strings
     for song in song_info_map:
         song['artists'] = ', '.join(json.loads(song['artists']))
-    return render_template('playlist_list.html', song_info_map=song_info_map, genre=genre)
+
+    return render_template('playlist_list.html', song_info_map=song_info_map, genre=genre,
+                           access_token=access_token, d_id=d_id, devices=devices)
 
 
 @app.route('/export', methods=['POST'])
@@ -102,3 +108,8 @@ def export():
     ret = playlist_helper.add_tracks_to_playlist(spotify, playlist_id, genres_to_export)
 
     return genre
+
+
+@app.route('/play/<string:uri>')
+def play(uri):
+    pass

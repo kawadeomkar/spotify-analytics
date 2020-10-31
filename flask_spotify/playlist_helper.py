@@ -106,7 +106,7 @@ def create_playlist(spotify: spotipy.client,
                     public: bool = True,
                     description: str = 'This playlist was curated by SpotifyAnalytics '
                                        'https://github.com/kawadeomkar/spotify-analytics') -> str:
-    """Creates a playlist and returns playlist id"""
+    """ Creates a playlist and returns playlist id """
     user_id = spotify.me()['id']
     playlist = spotify.user_playlist_create(user_id, name, public=public, description=description)
     return playlist['id']
@@ -116,7 +116,7 @@ def add_tracks_to_playlist(spotify: spotipy.client,
                            playlist_id: str,
                            track_ids: Set[str],
                            position: int = 0) -> bool:
-    """Attempts to add tracks to a playlist, if track_ids length is longer than 100,
+    """ Adds tracks to a playlist, if track_ids length is longer than 100,
     zip_longest is used for performance boost over slicing (matrix transpose on 100 identity refs)
     TODO: position is not used for now (use later to append based on popularity
     TODO: retry logic if HTTPError is thrown?"""
@@ -133,3 +133,6 @@ def add_tracks_to_playlist(spotify: spotipy.client,
     except HTTPError as e:
         log.error(e)
         return False
+
+
+

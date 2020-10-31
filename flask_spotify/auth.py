@@ -44,7 +44,8 @@ def getSpotifyAuthToken(code) -> json:
 
 def authenticationRedirectURL(scope: str = None) -> str:
     if not scope:
-        scope = "user-library-read playlist-modify-public playlist-modify-private user-top-read"
+        scope = "user-library-read playlist-modify-public playlist-modify-private user-top-read " \
+                "streaming user-read-email user-read-private user-read-playback-state"
     return (
         f"""{os.environ["AUTH_URL"]}"""
         f"""client_id={os.environ["SPOTIPY_CLIENT_ID"]}"""
