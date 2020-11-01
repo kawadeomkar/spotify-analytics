@@ -31,10 +31,11 @@
                 li.appendChild(node);
                 document.getElementById("device_list").append(li);
 
-                console.log(device_id + " " + device.id);
+                console.log("devices:" + device_id + " " + device.id);
                 if (device_id === device.id) {
                     device_name = device.name;
                     device_type = device.type;
+                    console.log("name and type: " + device_name + " " + device_type);
                 }
             });
 
@@ -46,7 +47,7 @@
                 curr_device.id = 'curr_device';
 
                 document.getElementById("devices").prepend(device_header);
-                document.getElementById("device").append(curr_device);
+                document.getElementById("devices").append(curr_device);
             }
 
         });

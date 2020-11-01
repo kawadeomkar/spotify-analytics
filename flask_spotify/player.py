@@ -45,6 +45,9 @@ def get_device_info(spotify: spotipy.client) -> Tuple[Union[None, str], Dict]:
     if d_id is None and devices is not None:
         d_id = devices[0]['id']
 
+    log.info(d_id)
+    log.info(devices)
+
     return d_id, devices
 
 

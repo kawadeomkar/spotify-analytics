@@ -52,6 +52,8 @@ expired)
 - improve styling of playlist
 - improve styling of export button
 - add certain track pictures to playlist viewing
+- add hover text with d3 tooltips
+- automatic bubble text sizing
 
 ### Analytics
 - trend of genre over time

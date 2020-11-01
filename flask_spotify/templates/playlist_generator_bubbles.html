@@ -6,15 +6,25 @@
           href="{{ url_for('static',filename='css/playlist_generator_grid.css') }}">
     <script src="{{ url_for('static', filename='bower_components/jquery/dist/jquery.min.js') }}"></script>
     <script src="{{ url_for('static', filename='bower_components/bootstrap/dist/js/bootstrap.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='bower_components/d3/d3.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/playlist_generator_grid.js') }}"></script>
+    <script src="https://d3js.org/d3-color.v1.min.js"></script>
+    <script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
 
 </head>
+<style>
+text {
+  font: 24px "Helvetica Neue", Helvetica, Arial, sans-serif;
+  text-anchor: middle;
+  pointer-events: none;
+}
+</style>
 <body>
 <h1>Spotify Analytics</h1>
 <div id="genres_test"></div>
 <div id="chart"></div>
+
 <script>
     // import user genre map
     var genre_counts = JSON.parse('{{ genre_counts | tojson | safe }}');
@@ -108,26 +118,23 @@
         });
 
     node.append("text")
-        .attr("dy", ".2em")
-        .style("text-anchor", "middle")
+        .attr("dy", ".1em")
         .text(function (d) {
-            return d.data.Name.substring(0, d.r / 3);
+            return d.data.Name;
         })
-        .attr("font-family", "sans-serif")
-        .attr("font-size", function (d) {
-            return d.r / 4;
+        .style("font-size", function(d) {
+            return Math.min(2 * d.r, (2 * d.r - 8) / this.getComputedTextLength() * 20) + "px";
         })
         .attr("fill", "white");
 
     node.append("text")
-        .attr("dy", "1.3em")
-        .style("text-anchor", "middle")
+        .attr("dy", "1.7em")
         .text(function (d) {
             return d.data.Count;
         })
-        .attr("font-family", "Gill Sans", "Gill Sans MT")
-        .attr("font-size", function (d) {
-            return d.r / 5;
+        .style("font-size", function(d) {
+            console.log("radius vs scaled text len")
+            return Math.min(0.4 * d.r, (2 * d.r - 8) / this.getComputedTextLength() * 3.5) + "px";
         })
         .attr("fill", "white");
 
