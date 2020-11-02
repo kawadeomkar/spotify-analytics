@@ -62,7 +62,7 @@ def liked_songs_genre_map(spotify: spotipy.client) -> Dict[str, List[str]]:
     """
     result = spotify.current_user_saved_tracks(limit=50, offset=0)
     tracks = result['items']
-    # total = result['total'] TODO: Testing, currently capping at 100
+    # total = result['total']  # TODO: Testing, currently capping at 100
     total = 100
     log.info(f"User has a total of {total} tracks")
 
@@ -133,6 +133,3 @@ def add_tracks_to_playlist(spotify: spotipy.client,
     except HTTPError as e:
         log.error(e)
         return False
-
-
-
