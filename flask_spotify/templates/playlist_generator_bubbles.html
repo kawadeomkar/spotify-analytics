@@ -102,9 +102,8 @@ text {
             console.log("color: " + i);
             return color(i);
         })
-        .on("click", function (bubble, a) {
-            console.log(bubble, a, this);
-            window.location.href='playlist/' + a.data.Name
+        .on("click", function (handler, bubble) {
+            window.location.href='playlist/' + bubble.data.Name
            /* TODO: DEPRECATED: instead of writing html to the document, route to path
             $.ajax({
                 type: 'POST',
@@ -123,6 +122,9 @@ text {
                 }
             });
             */
+        })
+        .on('mouseover', function (handler, bubble) {
+
         });
 
     node.append("text")

@@ -86,7 +86,8 @@ def liked_songs_genre_map(spotify: spotipy.client) -> Dict[str, List[str]]:
             'artists': json.dumps([artist['name'] for artist in track_obj['artists']]),
             'name': track_obj['name'],
             'duration': track_obj['duration_ms'],  # in milliseconds
-            'spotify_url': track_obj['external_urls']['spotify']
+            'spotify_url': track_obj['external_urls']['spotify'],
+            'popularity': track_obj['popularity']
         }
         redis_cache.set_spotify_track(track_obj['id'], track_info)
 

@@ -78,15 +78,18 @@ def playlist(genre):
     access_token = session['access_token']
     songs = redis_cache.get_user_genre_tracks(access_token, genre)
     song_info_map = [redis_cache.get_spotify_track_name(t_id) for t_id in songs]
+    sorted_song_info_map = sorted(song_info_map,
+                                  key=lambda song: int(song['popularity']),
+                                  reverse=True)
 
     spotify = spotipy.Spotify(auth=access_token)
     d_id, devices = player.get_device_info(spotify)
 
     # extract artists back to strings
-    for song in song_info_map:
+    for song in sorted_song_info_map:
         song['artists'] = ', '.join(json.loads(song['artists']))
 
-    return render_template('playlist_list.html', song_info_map=song_info_map, genre=genre,
+    return render_template('playlist_list.html', song_info_map=sorted_song_info_map, genre=genre,
                            access_token=access_token, d_id=d_id, devices=devices)
 
 
