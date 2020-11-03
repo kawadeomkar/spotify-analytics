@@ -32,7 +32,7 @@ expired)
 ##### Exporting
 - Delete after exporting (in case it was an accident) (p3)
 - ~~exporting playlist (p1)~~ (10/29/2020)
-- allow user to name playlist (p1)
+- allow user to name playlist (p2)
 
 ### Home Features 
 - loading page (p2)

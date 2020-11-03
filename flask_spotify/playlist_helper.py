@@ -63,7 +63,7 @@ def liked_songs_genre_map(spotify: spotipy.client) -> Dict[str, List[str]]:
     result = spotify.current_user_saved_tracks(limit=50, offset=0)
     tracks = result['items']
     # total = result['total']  # TODO: Testing, currently capping at 100
-    total = 100
+    total = 500
     log.info(f"User has a total of {total} tracks")
 
     if total > 50:
@@ -77,6 +77,8 @@ def liked_songs_genre_map(spotify: spotipy.client) -> Dict[str, List[str]]:
     genre_map = {}
     for track in tracks:
         track_obj = track['track']
+
+        log.info(track_obj['name'])
 
         # save song track info to redis
         track_info = {
