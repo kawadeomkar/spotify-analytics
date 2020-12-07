@@ -35,7 +35,7 @@ expired)
 - allow user to name playlist (p2)
 
 ### Home Features 
-- loading page (p2)
+- loading page, show songs as they are being loaded (p1)
 - ~~increase size of bubbles to fit screen (p1)~~ (10/31/2020) 
 - moving around song bubbles (p4)
 - play around with treemap vs bubbles (p3)
