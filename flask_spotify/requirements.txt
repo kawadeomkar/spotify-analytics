@@ -1,4 +1,6 @@
-Flask==1.1.1
-gunicorn==19.10.0
+Flask==1.1.2
+eventlet==0.30.0
+gunicorn==20.0.4
 redis==3.5.3
 spotipy==2.16.1
+Flask-SocketIO==5.0.0

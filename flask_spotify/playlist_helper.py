@@ -16,14 +16,16 @@ res_pos = 0
 res_neg = 0
 
 
-@lru_cache(maxsize=128)
+@lru_cache(maxsize=None)
 def get_artist_genres(spotify: spotipy.client, artist_id: str) -> List[str]:
-    return spotify.artist(artist_id)['genres']
+    ret = spotify.artist(artist_id)
+    return ret['genres'] if 'genres' in ret else None
 
 
-@lru_cache(maxsize=128)
+@lru_cache(maxsize=None)
 def get_album_genres(spotify: spotipy.client, album_id: str):
-    return spotify.album(album_id)['genres']
+    ret = spotify.album(album_id)
+    return ret['genres'] if 'genres' in ret else None
 
 
 def get_track_genres(spotify: spotipy.client,
@@ -33,16 +35,21 @@ def get_track_genres(spotify: spotipy.client,
     Returns a set of genres obtained from the album and artist, multiple genres will map to the same
     track ID in this scenario
     """
+    # TODO: TESTING
     global res_pos, res_neg
 
     genres = set()
 
     if artist_ids:
         for a_id in artist_ids:
-            genres.update(get_artist_genres(spotify, a_id))
+            artist_genres = get_artist_genres(spotify, a_id)
+            if artist_genres:
+                genres.update(artist_genres)
 
     if album_id:
-        genres.update(get_album_genres(spotify, album_id))
+        album_genres = get_album_genres(spotify, album_id)
+        if album_genres:
+            genres.update(album_genres)
 
     # TODO: remove analysis
     if genres:
@@ -54,54 +61,41 @@ def get_track_genres(spotify: spotipy.client,
     return genres
 
 
-def liked_songs_genre_map(spotify: spotipy.client) -> Dict[str, List[str]]:
+def liked_songs_genre_map(spotify: spotipy.client,
+                          genre_map: Dict[str, List],
+                          track: List[str]) -> Dict[str, List[str]]:
     """
     Extracts artist and album id from each saved track and attempts to grab all related genres. Each
     track is then associated with 0 or more genres.
     Sets each spotify track id to its name in redis, default (none) TTL expiry
     """
-    result = spotify.current_user_saved_tracks(limit=50, offset=0)
-    tracks = result['items']
-    # total = result['total']  # TODO: Testing, currently capping at 100
-    total = 500
-    log.info(f"User has a total of {total} tracks")
+    track_obj = track['track']
 
-    if total > 50:
-        rest = list(map(
-            lambda x: (spotify.current_user_saved_tracks(limit=50, offset=x)['items']),
-            list(range(50, total, 50))
-        ))
-        rest = list(chain.from_iterable(rest))
-        tracks.extend(rest)
+    log.info(track_obj['name'])
 
-    genre_map = {}
-    for track in tracks:
-        track_obj = track['track']
+    # save song track info to redis
+    track_info = {
+        # @Future: Possibly dump all information? (external url, uri)
+        'artists': json.dumps([artist['name'] for artist in track_obj['artists']]),
+        'name': track_obj['name'],
+        'duration': track_obj['duration_ms'],  # in milliseconds
+        'spotify_url': track_obj['external_urls']['spotify'],
+        'popularity': track_obj['popularity']
+    }
 
-        log.info(track_obj['name'])
+    # save spotify track in redis
+    redis_cache.set_spotify_track(track_obj['id'], track_info)
 
-        # save song track info to redis
-        track_info = {
-            # @Future: Possibly dump all information? (external url, uri)
-            'artists': json.dumps([artist['name'] for artist in track_obj['artists']]),
-            'name': track_obj['name'],
-            'duration': track_obj['duration_ms'],  # in milliseconds
-            'spotify_url': track_obj['external_urls']['spotify'],
-            'popularity': track_obj['popularity']
-        }
-        redis_cache.set_spotify_track(track_obj['id'], track_info)
+    # extract genres
+    artist_ids = [artist['id'] for artist in track_obj['artists']]
+    album_id = track_obj['album']['id']
+    genres = get_track_genres(spotify, artist_ids=artist_ids, album_id=album_id)
 
-        # extract genres
-        artist_ids = [artist['id'] for artist in track_obj['artists']]
-        album_id = track_obj['album']['id']
-        genres = get_track_genres(spotify, artist_ids=artist_ids, album_id=album_id)
-
-        for genre in genres:
-            if genre not in genre_map:
-                genre_map[genre] = []
-            genre_map[genre].append(track_obj['id'])
-
-    return genre_map
+    # TODO: figure out what to do if there is no genre associated with a track
+    for genre in genres:
+        if genre not in genre_map:
+            genre_map[genre] = []
+        genre_map[genre].append(track_obj['id'])
 
 
 def create_playlist(spotify: spotipy.client,

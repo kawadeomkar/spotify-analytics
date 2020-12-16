@@ -22,7 +22,8 @@ services:
     build: ./flask_spotify
     ports:
       - "5000:5000"
-    command: gunicorn -w 3 --threads 2 -b 0.0.0.0:5000 wsgi:app
+    command: bash -c "gunicorn --worker-class eventlet -w 1  -b 0.0.0.0:5000 wsgi:app
+              && gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 module:app"
 
   nginx:
     container_name: nginx

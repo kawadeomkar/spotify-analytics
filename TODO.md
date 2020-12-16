@@ -20,6 +20,9 @@ expired)
 - ~~dump redis rdb snapshot for restoring redis instance (p2)~~ (10/30)
 - set TTL for user values based on auth tokens expiry
 
+### Websockets:
+- add multiple workers to gunicorn with eventlet to support websockets https://flask-socketio.readthedocs.io/en/latest/#using-multiple-workers
+
 ### Formatting:
 - Change all functions to underscore delimited from camel case (p3)
 - Try to add typing to all parameters and functions (p5)

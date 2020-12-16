@@ -32,7 +32,7 @@ def user_exists(access_token: str) -> bool:
 
 def user_map_exists(access_token) -> bool:
     hash_key = md5(access_token.encode('utf-8')).hexdigest()
-    return user_exists(hash_key) and bool(client.exists(hash_key + "genre"))
+    return user_exists(access_token) and bool(client.exists(hash_key + "gtc"))
 
 
 def set_expire_to_access_token(hash_key: str, key_to_expire: str) -> bool:
@@ -63,6 +63,7 @@ def set_user_genre_tracks(access_token: str, genre_track_map: Dict[str, List[str
 
     for genre, track_list in genre_track_map.items():
         client.sadd(hash_key + genre, *track_list)
+        print("REDIS -- SAVING: ", hash_key + genre)
         client.expire(hash_key + genre, ttl)
 
 
@@ -70,6 +71,7 @@ def set_user_genre_track_count(access_token: str, genre_track_map: Dict[str, Lis
     hash_key = md5(access_token.encode('utf-8')).hexdigest()
     genre_track_count: Dict[str, int] = {k: len(v) for k, v in genre_track_map.items()}
     client.hset(hash_key + 'gtc', mapping=genre_track_count)
+    print("REDIS -- SAVING: ", hash_key + 'gtc')
     set_expire_to_access_token(hash_key, hash_key + 'gtc')
 
 

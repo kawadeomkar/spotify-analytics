@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SpotifyAnalytics</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.min.js"
+            integrity="sha512-Jq1JnVXlkYQOYQpz31qIV/0l67d97J9I6sbILtfiSYX00Isr2zK7XDRmHW8d2iBTwNZfL7sHkHGT0EzLs90jdw=="
+            crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+    $(document).ready(function () {
+        // TODO: change connection details when deploying
+
+
+        // var socket = io.connect("http://localhost", {
+        //     port: 5000,
+        //     rememberTransport: false,
+        //     reconnect: true,
+        //     transports: ['WebSocket']
+        // });
+
+        const socket = io("http://localhost:5000", {transports: ['websocket']});
+
+        // on reconnection, reset the transports option, as the Websocket
+        // connection may have failed (caused by proxy, firewall, browser, ...)
+        socket.on('reconnect_attempt', () => {
+            console.log("using polling instead of websocket")
+            socket.io.opts.transports = ['polling', 'websocket'];
+        });
+
+        console.log("document is ready");
+
+
+        socket.on('connect', function () {
+            console.log("connected!");
+
+            window.location.replace("/loading");
+            //$.ajax({
+            //    type: 'POST',
+            //    contentType: 'application/json;charset=UTF-8',
+            //    url: "/loading",
+            //    data: "",
+            //    success: function (response) {
+            //        console.log(response);
+            //    },
+            //    error: function (response, error) {
+            //        console.log(response);
+            //        console.log(error);
+            //        document.open();
+            //        document.write(response);
+            //        document.close();
+            //    }
+            //});
+        });
+
+        socket.on('loading_song_counts', function (msg) {
+            document.getElementById('song_counts').innerText = msg
+            console.log(msg)
+        })
+
+        socket.on('loading_song_titles', function (msg) {
+            document.getElementById('songs').innerText = msg
+        });
+    });
+</script>
+<h1>Loading...</h1>
+<p id="songs"></p>
+<p id="song_count"></p>
+</body>
+</html>

@@ -108,7 +108,7 @@ text {
             $.ajax({
                 type: 'POST',
                 contentType: 'application/json;charset=UTF-8',
-                url: "{url_for('playlist')}", took out extra brackets for jinja error
+                url: "{url_for('playlist')}", // took out extra brackets for jinja error
                 data: JSON.stringify({"Name": bubble.data.Name}),
                 success: function (response) {
                     console.log(response);

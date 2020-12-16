@@ -42,9 +42,6 @@ def get_device_info(spotify: spotipy.client) -> Tuple[Union[None, str], Dict]:
         del device['is_private_session']
         del device['volume_percent']
 
-    if d_id is None and devices is not None:
-        d_id = devices[0]['id']
-
     log.info(d_id)
     log.info(devices)
 
