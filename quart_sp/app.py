@@ -1,7 +1,6 @@
 from itertools import chain
 
-from flask import Flask, redirect, render_template, request, session, url_for
-from flask_socketio import SocketIO, send, emit
+from quart import Quart, redirect, render_template, request, session, url_for, websocket
 from typing import List
 
 import auth
@@ -16,26 +15,22 @@ import traceback
 import util
 
 # TODO: server setup with TLS
-app = Flask(__name__)
+app = Quart(__name__)
 app.secret_key = os.environ['WSGI_SECRET_KEY']
 
 # logging
 log = util.setLogger(__name__)
 
-socketio = SocketIO(app, cors_allowed_origins='*', logger=True, engineio_logger=True)
+# TODO: remove flask-socketio 
+# socketio = SocketIO(app, cors_allowed_origins='*', logger=True, engineio_logger=True)
 
 
-@socketio.on('loading_song_count')
-def load_songs_counts(song_count: str):
-    emit('loading_song_count', song_count)
+@app.websocket("/loading_song_count")
+async def load_songs_counts(song_count: str):
+    await websocket.send(song_count)
 
 
-@socketio.on('loading_song_titles')
-def load_songs(song_title: str):
-    emit('loading_song_titles', song_title)
-
-
-def extract_tracks(spotify: spotipy.client, genre_map, tracks: List, count: int):
+async def extract_tracks(spotify: spotipy.client, genre_map, tracks: List, count: int):
     for track in tracks:
         track_obj = track['track']
 
@@ -50,7 +45,7 @@ def extract_tracks(spotify: spotipy.client, genre_map, tracks: List, count: int)
 
 
 @app.route('/loading', methods=['POST', 'GET'])
-def load_songs_from_spotify():
+async def load_songs_from_spotify():
     """
 
     :return: redirect to home page
@@ -79,17 +74,17 @@ def load_songs_from_spotify():
     redis_cache.set_user_genre_tracks(access_token, genre_map)
     redis_cache.set_user_genre_track_count(access_token, genre_map)
 
-    return redirect(url_for('spotify_analytics'))
+    return await redirect(url_for('spotify_analytics'))
 
 
 @app.route('/', methods=['POST', 'GET'])
-def spotify_analytics():
+async def spotify_analytics():
     if not redis_cache.ping():  # TODO: remove after done with testing
         print("CANT CONNECT TO REDIS")
 
     validate = auth.validateAccessToken()
     if validate:
-        return redirect(validate)
+        return await redirect(validate)
 
     access_token = session['access_token']
     log.info(f"Access token: {access_token}")
@@ -97,20 +92,20 @@ def spotify_analytics():
     if not redis_cache.user_map_exists(access_token):
         log.info('Genre map not found in redis cache, querying Spotify API')
 
-        return render_template('loading.html',
+        return await render_template('loading.html',
                                page_title="Loading songs")
     else:
         # load from redis
         genre_map_raw = redis_cache.get_user_genre_track_count(access_token)
         genre_map_d3 = [{'Name': genre, 'Count': int(tracks)}
                         for genre, tracks in genre_map_raw.items()]
-        return render_template('playlist_generator_bubbles.html',
+        return await render_template('playlist_generator_bubbles.html',
                                page_title='Spotify Analytics - Playlist Generator',
                                genre_counts={"children": genre_map_d3})
 
 
 @app.route('/callback/')
-def callback():
+async def callback():
     auth_details = auth.getSpotifyAuthToken(request.args.get('code'))
     access_token, expires_in = auth_details['access_token'], auth_details['expires_in']
 
@@ -119,14 +114,14 @@ def callback():
     session['access_token'] = access_token
     session['expires_in'] = expires_in
 
-    return redirect(url_for('spotify_analytics'))
+    return await redirect(url_for('spotify_analytics'))
 
 
 @app.route('/playlist/<string:genre>')
-def playlist(genre):
+async def playlist(genre):
     validate = auth.validateAccessToken()
     if validate:
-        return redirect(validate)
+        return await redirect(validate)
 
     access_token = session['access_token']
     songs = redis_cache.get_user_genre_tracks(access_token, genre)
@@ -142,16 +137,16 @@ def playlist(genre):
     for song in sorted_song_info_map:
         song['artists'] = ', '.join(json.loads(song['artists']))
 
-    return render_template('playlist_list.html', song_info_map=sorted_song_info_map, genre=genre,
+    return await render_template('playlist_list.html', song_info_map=sorted_song_info_map, genre=genre,
                            access_token=access_token, d_id=d_id, devices=devices)
 
 
 @app.route('/export', methods=['POST'])
-def export():
+async def export():
     # TODO: Implement JS logic to issue error
     validate = auth.validateAccessToken()
     if validate:
-        return redirect(validate)
+        return await redirect(validate)
 
     genre = request.get_json()['genre']
     access_token = session['access_token']
@@ -163,11 +158,11 @@ def export():
     # TODO: retry logic in this function? display error if false
     ret = playlist_helper.add_tracks_to_playlist(spotify, playlist_id, genres_to_export)
 
-    return genre
+    return await genre
 
 
 @app.route('/play/<string:uri>')
-def play(uri):
+async def play(uri):
     pass
 
 # # TODO: handle 500 ISE
