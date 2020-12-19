@@ -36,9 +36,9 @@ async def extract_tracks(spotify: spotipy.client, genre_map, tracks: List, count
 
         # emit to front end loading page
         print("SONG NAME: ", track_obj['name'])
-        socketio.emit("loading_song_titles", track_obj['name'])
+        websocket.send("loading_song_titles", track_obj['name'])
         count += 1
-        socketio.emit("loading_song_count", str(count))
+        websocket.send("loading_song_count", str(count))
 
         # save track to redis and form genre map
         playlist_helper.liked_songs_genre_map(spotify, genre_map, track)

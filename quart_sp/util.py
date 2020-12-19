@@ -1,6 +1,30 @@
+import functools
 import logging
 import sys
 
+
+def debug(func):
+    @functools.wraps(func)
+    def wrapper_debug(*args, **kwargs):
+        sig = ", ".join(
+            [repr(a) for a in args] + [f"{k}={v!r}" for k, v in kwargs.items()])           
+        print(f"Calling {func.__name__}({sig})")
+        value = func(*args, **kwargs)
+        print(f"{func.__name__!r} returned {value!r}")           
+        return value
+    return wrapper_debug
+
+def validate_input(*expected_args):
+    def validate_outer(func):
+        @functools.wraps(func)
+        def validate_wrap(*args, **kwargs):
+            json_obj = request.get_json()
+            for exp in expected_args:
+                if exp not in json_obj:
+                    abort(400)
+            return func(*args, **kwargs)
+        return validate_wrap
+    return validate_outer
 
 def setLogger(name: str) -> logging:
     root = logging.getLogger(name)
