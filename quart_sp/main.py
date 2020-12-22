@@ -3,25 +3,26 @@ from itertools import chain
 from quart import Quart, redirect, render_template, request, session, url_for, websocket
 from typing import List
 
-import auth
-import json
 import loading
 import os
 import player
 import playlist_helper
 import redis_cache
-import spotipy
 import traceback
+import ujson
 import util
 
+# import routes
+import auth
+
 # TODO: server setup with TLS
-app = Quart(__name__)
-app.secret_key = os.environ['WSGI_SECRET_KEY']
+
 
 # logging
 log = util.setLogger(__name__)
 
-# TODO: remove flask-socketio 
+
+# TODO: remove flask-socketio
 # socketio = SocketIO(app, cors_allowed_origins='*', logger=True, engineio_logger=True)
 
 
@@ -93,28 +94,15 @@ async def spotify_analytics():
         log.info('Genre map not found in redis cache, querying Spotify API')
 
         return await render_template('loading.html',
-                               page_title="Loading songs")
+                                     page_title="Loading songs")
     else:
         # load from redis
         genre_map_raw = redis_cache.get_user_genre_track_count(access_token)
         genre_map_d3 = [{'Name': genre, 'Count': int(tracks)}
                         for genre, tracks in genre_map_raw.items()]
         return await render_template('playlist_generator_bubbles.html',
-                               page_title='Spotify Analytics - Playlist Generator',
-                               genre_counts={"children": genre_map_d3})
-
-
-@app.route('/callback/')
-async def callback():
-    auth_details = auth.getSpotifyAuthToken(request.args.get('code'))
-    access_token, expires_in = auth_details['access_token'], auth_details['expires_in']
-
-    # add user to redis cache
-    redis_cache.add_user(access_token, expires_in)
-    session['access_token'] = access_token
-    session['expires_in'] = expires_in
-
-    return await redirect(url_for('spotify_analytics'))
+                                     page_title='Spotify Analytics - Playlist Generator',
+                                     genre_counts={"children": genre_map_d3})
 
 
 @app.route('/playlist/<string:genre>')
@@ -137,8 +125,9 @@ async def playlist(genre):
     for song in sorted_song_info_map:
         song['artists'] = ', '.join(json.loads(song['artists']))
 
-    return await render_template('playlist_list.html', song_info_map=sorted_song_info_map, genre=genre,
-                           access_token=access_token, d_id=d_id, devices=devices)
+    return await render_template('playlist_list.html', song_info_map=sorted_song_info_map,
+                                 genre=genre,
+                                 access_token=access_token, d_id=d_id, devices=devices)
 
 
 @app.route('/export', methods=['POST'])

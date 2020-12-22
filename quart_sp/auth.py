@@ -1,17 +1,32 @@
-from flask import session
-from typing import Union
+from quart import redirect, request, session, url_for
+from quart_sp import app
+from typing import Dict, Union
 
+import aiohttp
+import asyncio
 import base64
-import json
 import os
 import redis_cache
-import requests
+import ujson
 import util
 
 log = util.setLogger(__name__)
 
 
-def getSpotifyAuthToken(code) -> json:
+@app.route('/callback/')
+async def callback():
+    auth_details = getSpotifyAuthToken(request.args.get('code'))
+    access_token, expires_in = auth_details['access_token'], auth_details['expires_in']
+
+    # add user to redis cache
+    redis_cache.add_user(access_token, expires_in)
+    session['access_token'] = access_token
+    session['expires_in'] = expires_in
+
+    return await redirect(url_for('spotify_analytics'))
+
+
+async def getSpotifyAuthToken(code) -> Dict:
     body = {
         "grant_type": 'authorization_code',
         "code": code,
@@ -42,7 +57,7 @@ def getSpotifyAuthToken(code) -> json:
     return json.loads(post.text)
 
 
-def authenticationRedirectURL(scope: str = None) -> str:
+async def authenticationRedirectURL(scope: str = None) -> str:
     if not scope:
         scope = "user-library-read playlist-modify-public playlist-modify-private user-top-read " \
                 "streaming user-read-email user-read-private user-read-playback-state"
@@ -65,4 +80,3 @@ def validateAccessToken() -> Union[str, None]:
 # TODO: implement
 def refresh_token():
     pass
-
