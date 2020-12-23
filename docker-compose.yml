@@ -19,7 +19,9 @@ services:
     env_file:
       - quart_sp/.env
     restart: always
-    build: ./
+    build:
+      context: quart_sp
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
     command: hypercorn -w 1 -b 0.0.0.0:5000 asgi:app
