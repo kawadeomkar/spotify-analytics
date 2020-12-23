@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Any, Dict, List, Union
 
 import aiohttp
@@ -81,6 +82,7 @@ class Spotify:
                                     http_method='POST')
         return resp['snapshot_id']
 
+    @lru_cache(maxsize=None)
     async def artists(self, ids: Union[List, str], session: aiohttp.ClientSession):
         """
         Returns artist(s) information
@@ -93,6 +95,7 @@ class Spotify:
         resp = await self.http_call(endpoint_route, session, params={'ids': ids})
         return resp['artists']
 
+    @lru_cache(maxsize=None)
     async def albums(self, ids: Union[List, str], session: aiohttp.ClientSession):
         """
         Returns album(s) information
@@ -125,9 +128,6 @@ class Spotify:
 
         offset: plays uri with offset - applies only to albums and playlist
         """
-        if uris is None and context_uri is None:
-            return False
-
         endpoint_route = "v1/me/player/play"
         params = {}
 

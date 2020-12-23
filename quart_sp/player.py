@@ -1,36 +1,48 @@
-from requests.exceptions import HTTPError
+from quart_sp import app
 from typing import Dict, List, Tuple, Union
 
-import spotipy
+import aiohttp
+import spotify
+import ujson
 import util
 
 log = util.setLogger(__name__)
 
 
-def play_song(spotify: spotipy.client,
-              context_uri: str,
-              uris: List[str],
-              offset: Dict[str, Union[str, int]] = None,
-              position_ms=None):
+@app.route('/play/<string:uri>')
+async def play(uri):
+    pass
+
+
+async def play_song(sp: spotify.Spotify,
+                    context_uri: str = None,
+                    uris: List[str] = None,
+                    offset: Dict[str, Union[str, int]] = None,
+                    position_ms=None,
+                    session: aiohttp.ClientSession = None):
     """ Plays a song if uris is provided, otherwise plays context_uri if provided and then returns
      true. Otherwise returns false"""
     if uris is None and context_uri is None:
         return False
-    try:
-        # uris take priority
-        if uris:
-            spotify.start_playback(uris=uris, offset=offset, position_ms=position_ms)
-        elif context_uri:
-            spotify.start_playback(context_uri=context_uri, offset=offset, position_ms=position_ms)
-        return True
-    except HTTPError as e:
-        log.error(e)
-        return False
+    if not session:
+        session = aiohttp.ClientSession(json_serialize=ujson)
+
+    if uris:
+        sp.start_playback(session, uris=uris, offset=offset, position_ms=position_ms)
+    elif context_uri:
+        sp.start_playback(session, context_uri=context_uri, offset=offset, position_ms=position_ms)
+    return True
 
 
-def get_device_info(spotify: spotipy.client) -> Tuple[Union[None, str], Dict]:
+async def get_device_info(sp: spotify.Spotify, session: aiohttp.ClientSession = None) -> Tuple[
+    Union[None, str], Dict]:
     """ Returns tuple of current device in use and dict of devices"""
-    devices = spotify.devices()['devices']
+    if not session:
+        session = aiohttp.ClientSession(json_serialize=ujson)
+
+    with session as sess:
+        devices = await sp.get_devices(sess)
+
     d_id = None
 
     log.info(devices)
@@ -46,5 +58,3 @@ def get_device_info(spotify: spotipy.client) -> Tuple[Union[None, str], Dict]:
     log.info(devices)
 
     return d_id, devices
-
-
