@@ -1,4 +1,4 @@
-from quart_sp import app
+from quart import Blueprint
 from typing import Dict, List, Tuple, Union
 
 import aiohttp
@@ -7,9 +7,10 @@ import ujson
 import util
 
 log = util.setLogger(__name__)
+player_route = Blueprint('player_route', __name__)
 
 
-@app.route('/play/<string:uri>')
+@player_route.route('/play/<string:uri>')
 async def play(uri):
     pass
 

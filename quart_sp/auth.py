@@ -1,5 +1,4 @@
-from quart import redirect, request, session, url_for
-from quart_sp import app
+from quart import Blueprint, redirect, request, session, url_for
 from typing import Dict, Union
 
 import aiohttp
@@ -12,10 +11,12 @@ import util
 
 log = util.setLogger(__name__)
 
+auth_route = Blueprint('auth_route', __name__)
 
-@app.route('/callback/')
+
+@auth_route.route('/callback/')
 async def callback():
-    auth_details = getSpotifyAuthToken(request.args.get('code'))
+    auth_details = await getSpotifyAuthToken(request.args.get('code'))
     access_token, expires_in = auth_details['access_token'], auth_details['expires_in']
 
     # add user to redis cache
@@ -23,7 +24,7 @@ async def callback():
     session['access_token'] = access_token
     session['expires_in'] = expires_in
 
-    return await redirect(url_for('spotify_analytics'))
+    return redirect(url_for('spotify_analytics'))
 
 
 async def getSpotifyAuthToken(code) -> Dict:
@@ -46,18 +47,20 @@ async def getSpotifyAuthToken(code) -> Dict:
         "Authorization": f"Basic {encoded}"
     }
 
-    post = requests.post(os.environ["AUTH_TOKEN"], params=body, headers=headers)
-    if post.status_code != 200:
-        print(post.status_code, post.text)
-        if post.status_code == 400:
-            # TODO: handle invalid auth code error
-            print("400: AUTH TOKEN EXPIRED")
-            raise Exception
-        raise Exception
-    return json.loads(post.text)
+    async with aiohttp.ClientSession(json_serialize=ujson) as sess:
+        async with sess.post(os.environ['AUTH_TOKEN'], headers=headers, params=body) as resp:
+            resp_json = await resp.json()
+            if resp.status != 200:
+                print(resp.status, resp_json)
+                if resp.status == 400:
+                    # TODO: handle invalid auth code error
+                    print("400: AUTH TOKEN EXPIRED")
+                    raise Exception
+                raise Exception
+            return resp_json
 
 
-async def authenticationRedirectURL(scope: str = None) -> str:
+def authenticationRedirectURL(scope: str = None) -> str:
     if not scope:
         scope = "user-library-read playlist-modify-public playlist-modify-private user-top-read " \
                 "streaming user-read-email user-read-private user-read-playback-state"

@@ -1,10 +1,10 @@
 from itertools import chain
-from quart import redirect, render_template, request, session, url_for, websocket
-from quart_sp import app
+from quart import Quart, redirect, render_template, request, session, url_for, websocket
 from typing import List
 
 import aiohttp
 import asyncio
+import os
 import redis_cache
 import spotify
 import traceback
@@ -16,6 +16,14 @@ import auth
 import loading
 import player
 import playlist_helper
+
+app = Quart(__name__)
+app.register_blueprint(auth.auth_route)
+app.register_blueprint(loading.loading_route)
+app.register_blueprint(player.player_route)
+app.register_blueprint(playlist_helper.playlist_route)
+
+app.secret_key = os.environ['WSGI_SECRET_KEY']
 
 # TODO: server setup with TLS
 
@@ -35,7 +43,7 @@ async def spotify_analytics():
 
     validate = auth.validateAccessToken()
     if validate:
-        return await redirect(validate)
+        return redirect(validate)
 
     access_token = session['access_token']
     log.info(f"Access token: {access_token}")

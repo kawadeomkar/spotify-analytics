@@ -1,8 +1,7 @@
 # Liked songs library grouped by genre 
 from functools import lru_cache
 from itertools import zip_longest
-from quart import redirect, render_template, request, session
-from quart_sp import app
+from quart import Blueprint, redirect, render_template, request, session
 from typing import Dict, List, Set
 
 import aiohttp
@@ -14,13 +13,14 @@ import ujson
 import util
 
 log = util.setLogger(__name__)
+playlist_route = Blueprint('playlist_route', __name__)
 
 # TESTING TODO: remove
 res_pos = 0
 res_neg = 0
 
 
-@app.route('/playlist/<string:genre>')
+@playlist_route.route('/playlist/<string:genre>')
 async def playlist(genre):
     validate = auth.validateAccessToken()
     if validate:
@@ -45,7 +45,7 @@ async def playlist(genre):
                                  access_token=access_token, d_id=d_id, devices=devices)
 
 
-@app.route('/export', methods=['POST'])
+@playlist_route.route('/export', methods=['POST'])
 async def export():
     # TODO: Implement JS logic to issue error
     validate = auth.validateAccessToken()

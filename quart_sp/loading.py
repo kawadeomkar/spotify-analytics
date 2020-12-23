@@ -1,5 +1,4 @@
-from quart import redirect, session, url_for, websocket
-from quart_sp import app
+from quart import Blueprint, redirect, session, url_for, websocket
 from typing import List
 
 import aiohttp
@@ -10,9 +9,10 @@ import ujson
 import util
 
 log = util.setLogger(__name__)
+loading_route = Blueprint('loading_route', __name__)
 
 
-@app.websocket("/loading_song_count")
+@loading_route.websocket("/loading_song_count")
 async def load_songs_counts(song_count: str):
     await websocket.send(song_count)
 
@@ -32,7 +32,7 @@ async def extract_tracks(sp: spotify.Spotify, session: aiohttp.ClientSession, ge
         await playlist_helper.liked_songs_genre_map(sp, session, genre_map, track)
 
 
-@app.route('/loading', methods=['POST', 'GET'])
+@loading_route.route('/loading', methods=['POST', 'GET'])
 async def load_songs_from_spotify():
     """
 

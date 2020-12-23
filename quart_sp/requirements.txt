@@ -2,3 +2,4 @@ aiohttp==3.7.3
 hypercorn==0.11.1
 Quart==0.14.1
 redis==3.5.3
+ujson==4.0.1
