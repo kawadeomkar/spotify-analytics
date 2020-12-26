@@ -13,6 +13,8 @@ services:
       - redis/.env
     container_name: redis
     command: ["redis-server", "/redis.conf"]
+    networks:
+      - sp
 
   quart_sp:
     container_name: quart_sp
@@ -24,7 +26,11 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5000:5000"
+    expose:
+      - 5000
     command: hypercorn -w 1 -b 0.0.0.0:5000 asgi:app
+    networks:
+      - sp
 
   nginx:
     container_name: nginx
@@ -34,3 +40,9 @@ services:
       - "80:80"
     depends_on:
       - quart_sp
+    networks:
+      - sp
+
+networks:
+  sp:
+    driver: bridge

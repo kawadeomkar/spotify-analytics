@@ -12,9 +12,10 @@ log = util.setLogger(__name__)
 loading_route = Blueprint('loading_route', __name__)
 
 
-@loading_route.websocket("/loading_song_count")
-async def load_songs_counts(song_count: str):
-    await websocket.send(song_count)
+@loading_route.websocket("/load")
+async def load_songs_counts():
+    data = await websocket.receive()
+    await websocket.send(data)
 
 
 async def extract_tracks(sp: spotify.Spotify, session: aiohttp.ClientSession, genre_map,
