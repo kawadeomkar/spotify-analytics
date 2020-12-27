@@ -74,10 +74,12 @@ def authenticationRedirectURL(scope: str = None) -> str:
 
 
 def validateAccessToken() -> Union[str, None]:
+    log.debug("redis", redis_cache.ping())
     if 'access_token' not in session or not redis_cache.user_exists(session['access_token']):
         spotify_auth_redir = authenticationRedirectURL()
         log.info(f"302 REDIRECT, User needs to authenticate, redirect: {spotify_auth_redir}")
         return spotify_auth_redir
+    log.debug("NOT VALIDATED!")
 
 
 # TODO: implement

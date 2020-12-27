@@ -1,3 +1,4 @@
+import time
 from functools import lru_cache
 from typing import Any, Dict, List, Union
 
@@ -15,19 +16,38 @@ class Spotify:
         self.auth_token = auth_token
         self.user_id = None
 
+    def __str__(self):
+        return self.auth_token
+
     async def http_call(self,
                         endpoint_route: str,
                         session: aiohttp.ClientSession,
                         params: Dict[str, Union[str, int]] = None,
                         http_method='GET'):
+        print(session.closed)
+        print(session)
         async with session.request(http_method,
                                    self.endpoint_prefix + endpoint_route,
-                                   headers={'Authorization': f"Bearer {self.auth_token}",
-                                            'Content-Type': 'application/json'},
+                                   headers={'Authorization': f"Bearer {self.auth_token}"},
+                                   # 'Content-Type': 'application/json'},
                                    params=params) as resp:
+            # log.debug(resp.status)
+            # if resp.content_type != 'application/json':
+            #    time.sleep(3)
+            #    print("RESP CONTENT TYPE AINTT IT")
+            #    print(resp.content_type)
+            #    log.debug(resp.content_type)
+            #    time.sleep(3)
+            #    return None
+            # disable content types for incorrect mime type responses
             if resp.status == 200 or resp.status == 201:
-                data = await resp.json()
+                data = await resp.json(content_type=None)
                 return data
+            else:
+                log.debug(resp.status)
+                data = await resp.json(content_type=None)
+                log.debug(data)
+                raise Exception(data)
 
     async def get_user_id(self, session: aiohttp.ClientSession) -> str:
         """
@@ -52,6 +72,7 @@ class Spotify:
         endpoint_route = "v1/me/tracks"
         resp = await self.http_call(endpoint_route, session,
                                     params={'limit': limit, 'offset': offset})
+        log.debug(resp)
         return resp['items']
 
     async def create_playlist(self, user_id: str,
@@ -82,7 +103,7 @@ class Spotify:
                                     http_method='POST')
         return resp['snapshot_id']
 
-    @lru_cache(maxsize=None)
+    # TODO: implement async lru cache @lru_cache(maxsize=None)
     async def artists(self, ids: Union[List, str], session: aiohttp.ClientSession):
         """
         Returns artist(s) information
@@ -93,9 +114,11 @@ class Spotify:
         if isinstance(ids, str):
             ids = [ids]
         resp = await self.http_call(endpoint_route, session, params={'ids': ids})
-        return resp['artists']
+        if 'artists' in resp:
+            return resp['artists']
+        return resp
 
-    @lru_cache(maxsize=None)
+    # TODO: implement async lru cache @lru_cache(maxsize=None)
     async def albums(self, ids: Union[List, str], session: aiohttp.ClientSession):
         """
         Returns album(s) information
@@ -106,7 +129,9 @@ class Spotify:
         if isinstance(ids, str):
             ids = [ids]
         resp = await self.http_call(endpoint_route, session, params={'ids': ids})
-        return resp['albums']
+        if 'albums' in resp:
+            return resp['albums']
+        return resp
 
     async def get_devices(self, session: aiohttp.ClientSession):
         """

@@ -52,7 +52,8 @@ async def spotify_analytics():
         log.info('Genre map not found in redis cache, querying Spotify API')
 
         return await render_template('loading.html',
-                                     page_title="Loading songs")
+                                     page_title="Loading songs",
+                                     access_token=access_token)
     else:
         # load from redis
         genre_map_raw = redis_cache.get_user_genre_track_count(access_token)

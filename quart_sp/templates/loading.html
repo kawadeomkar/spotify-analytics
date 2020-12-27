@@ -9,7 +9,9 @@
 </head>
 <body>
 <script type="text/javascript">
+    token = "{{ access_token }}";
     $(document).ready(function () {
+
         // TODO: change connection details when deploying
         var ws = new WebSocket('ws://localhost:5000/load');
         ws.onmessage = function (event) {
@@ -17,8 +19,9 @@
         };
 
         ws.onopen = function (event) {
-            console.log("open now " + event);
-            ws.send("lol")
+            console.log(token)
+            ws.send(token)
+
         };
 
         ws.onerror = function (event) {
@@ -32,7 +35,6 @@
         //     reconnect: true,
         //     transports: ['WebSocket']
         // });
-
         // -- const socket = io("http://localhost:5000/load", {transports: ['websocket', 'polling']});
 
         // on reconnection, reset the transports option, as the Websocket

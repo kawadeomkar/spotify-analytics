@@ -12,6 +12,8 @@ import spotify
 import ujson
 import util
 
+import time
+
 log = util.setLogger(__name__)
 playlist_route = Blueprint('playlist_route', __name__)
 
@@ -83,22 +85,34 @@ async def get_track_genres(sp: spotify.Spotify,
 
     if artist_ids:
         for a_id in artist_ids:
-            artist_genres = await sp.artists(a_id, sess)['genres']
+            resp = await sp.artists(a_id, sess)
+            artist_genres = []
+            if isinstance(resp, list):
+                for artist in resp:
+                    artist_genres.extend(artist.get('genres', None))
+            else:
+                artist_genres = resp.get('genres', None)
             if artist_genres:
                 genres.update(artist_genres)
 
     if album_id:
-        album_genres = await sp.albums(album_id, sess)
+        resp = await sp.albums(album_id, sess)
+
+        album_genres = []
+        if isinstance(resp, list):
+            for artist in resp:
+                album_genres.extend(artist.get('genres', None))
+        else:
+            album_genres = resp.get('genres', None)
         if album_genres:
-            genres.update(album_genres)
+            genres.update(artist_genres)
 
     # TODO: remove analysis
     if genres:
         res_pos += 1
     else:
         res_neg += 1
-
-    log.info(res_pos, res_neg)
+    log.debug(f"HIT: {res_pos} MISS: {res_neg}")
 
     return genres
 
@@ -133,13 +147,15 @@ async def liked_songs_genre_map(sp: spotify.Spotify,
     artist_ids = [artist['id'] for artist in track_obj['artists']]
     album_id = track_obj['album']['id']
 
-    genres = await get_track_genres(sp, sess, artist_ids=artist_ids, album_id=album_id)
+    # genres = await get_track_genres(sp, sess, artist_ids=artist_ids, album_id=album_id)
 
     # TODO: figure out what to do if there is no genre associated with a track
-    for genre in genres:
-        if genre not in genre_map:
-            genre_map[genre] = []
-        genre_map[genre].append(track_obj['id'])
+    # for genre in genres:
+    #     if genre not in genre_map:
+    #         genre_map[genre] = []
+    #     genre_map[genre].append(track_obj['id'])
+
+    return artist_ids, album_id
 
 
 async def create_playlist(sp: spotify.Spotify,
