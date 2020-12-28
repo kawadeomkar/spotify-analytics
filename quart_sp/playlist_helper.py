@@ -2,7 +2,7 @@
 from functools import lru_cache
 from itertools import zip_longest
 from quart import Blueprint, redirect, render_template, request, session
-from typing import Dict, List, Set
+from typing import Any, Dict, List, Set
 
 import aiohttp
 import auth
@@ -117,10 +117,7 @@ async def get_track_genres(sp: spotify.Spotify,
     return genres
 
 
-async def liked_songs_genre_map(sp: spotify.Spotify,
-                                sess: aiohttp.ClientSession,
-                                genre_map: Dict[str, List],
-                                track: List[str]) -> Dict[str, List[str]]:
+async def liked_songs_genre_map(track: Dict[str, Any]) -> bool:
     """
     Extracts artist and album id from each saved track and attempts to grab all related genres. Each
     track is then associated with 0 or more genres.
@@ -141,11 +138,11 @@ async def liked_songs_genre_map(sp: spotify.Spotify,
     }
 
     # save spotify track in redis
-    redis_cache.set_spotify_track(track_obj['id'], track_info)
+    success = redis_cache.set_spotify_track(track_obj['id'], track_info)
 
     # extract genres
-    artist_ids = [artist['id'] for artist in track_obj['artists']]
-    album_id = track_obj['album']['id']
+    # artist_ids = [artist['id'] for artist in track_obj['artists']]
+    # album_id = track_obj['album']['id']
 
     # genres = await get_track_genres(sp, sess, artist_ids=artist_ids, album_id=album_id)
 
@@ -155,7 +152,7 @@ async def liked_songs_genre_map(sp: spotify.Spotify,
     #         genre_map[genre] = []
     #     genre_map[genre].append(track_obj['id'])
 
-    return artist_ids, album_id
+    return success # artist_ids, album_id
 
 
 async def create_playlist(sp: spotify.Spotify,
