@@ -59,7 +59,7 @@
                 type: 'POST',
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify({'genre': '{{ genre }}'}),
-                url: '{{url_for('export')}}',
+                url: '{{url_for('playlist_route.export')}}',
                 success: function (response) {
                     console.log(response);
                     document.getElementById('export_playlist').remove();

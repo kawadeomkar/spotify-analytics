@@ -41,7 +41,7 @@ async def get_device_info(sp: spotify.Spotify, session: aiohttp.ClientSession = 
     if not session:
         session = aiohttp.ClientSession(json_serialize=ujson)
 
-    with session as sess:
+    async with session as sess:
         devices = await sp.get_devices(sess)
 
     d_id = None

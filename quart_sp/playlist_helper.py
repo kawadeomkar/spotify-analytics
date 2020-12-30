@@ -31,9 +31,12 @@ async def playlist(genre):
     access_token = session['access_token']
     songs = redis_cache.get_user_genre_tracks(access_token, genre)
     song_info_map = [redis_cache.get_spotify_track_name(t_id) for t_id in songs]
-    sorted_song_info_map = sorted(song_info_map,
+    try:
+        sorted_song_info_map = sorted(song_info_map,
                                   key=lambda song: int(song['popularity']),
                                   reverse=True)
+    except:
+        raise Exception(str(song_info_map) + " XXX " + str(songs))
 
     sp = spotify.Spotify(access_token)
     d_id, devices = await player.get_device_info(sp)

@@ -1,3 +1,4 @@
+import asyncio
 from hashlib import md5
 from typing import Any, List, Dict, Union, Set
 
@@ -47,11 +48,13 @@ def set_expire_to_access_token(hash_key: str, key_to_expire: str) -> bool:
 
 # generic set
 def set_spotify_track(track_id: str, track_info: Dict[str, str]) -> bool:
+    if 'popularity' not in track_info or 'name' not in track_info:
+        raise Exception("Empty track mapping")
     return client.hset(track_id, mapping=track_info)
 
 
-def set_spotify_track_genres(artist_id: str, track_genres: List[str]) -> bool:
-    return client.sadd(artist_id, *track_genres)
+def set_spotify_track_genres(artist_id: str, artist_genres: List[str]) -> bool:
+    return client.sadd(artist_id, *artist_genres)
 
 
 def get_spotify_track_genres(artist_id: str) -> Union[Set[str], Set[None]]:
@@ -85,6 +88,8 @@ def _get_user_genres(hash_key: str) -> Set[str]:
 def set_user_genre_tracks(access_token: str, genre_track_map: Dict[str, List[str]]) -> bool:
     # Don't need to use "set_expire_to_access_token" func here, saving one call per sadd here
     hash_key = md5(access_token.encode('utf-8')).hexdigest()
+    print(f"User genre track map: {genre_track_map}")
+    asyncio.sleep(0.5)
     ttl = client.ttl(hash_key)
     success = True
 

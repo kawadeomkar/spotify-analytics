@@ -96,9 +96,11 @@ async def batch_update_album_genres(sp: spotify.Spotify, sess: aiohttp.ClientSes
     user_gt_set, user_g_set = True, True
     # save "token+genre" : [track_id] to redis
     if genre_map:
+        print(f"User genre map: {genre_map}")
         user_gt_set = redis_cache.set_user_genre_tracks(token, genre_map)
     # update users genres set
     if user_genres:
+        print(f"User genres: {user_genres}")
         user_g_set = redis_cache.set_user_genres(token, user_genres)
     return user_gt_set & user_g_set
 
@@ -116,7 +118,7 @@ async def batch_update_artist_genres(sp: spotify.Spotify, sess: aiohttp.ClientSe
         artist_genres = artist['genres']
         if artist_genres:
             for genre in artist_genres:
-                genre_map[genre].add(track_id[0])
+                genre_map[genre].add(track_id)
                 user_genres.add(genre)
             # save track genres to redis
             redis_cache.set_spotify_track_genres(artist['id'], artist_genres)
@@ -127,9 +129,11 @@ async def batch_update_artist_genres(sp: spotify.Spotify, sess: aiohttp.ClientSe
     user_gt_set, user_g_set = True, True
     # save "token+genre" : [track_id] to redis
     if genre_map:
+        print(f"User genre map artists: {genre_map}")
         user_gt_set = redis_cache.set_user_genre_tracks(token, genre_map)
     # update users genres set
     if user_genres:
+        print(f"User genres: {user_genres}")
         user_g_set = redis_cache.set_user_genres(token, user_genres)
     return user_gt_set & user_g_set
 
@@ -198,10 +202,12 @@ async def extract_tracks(sp: spotify.Spotify, sess: aiohttp.ClientSession, track
     if genres_cached:
         # save { "token+genre" : [track_id] } to redis
         redis_cache.set_user_genre_tracks(token, genres_cached)
+        print(f"User genres cached: {genres_cached}")
         # save user genres to redis
         genre_set.update(genres_cached.keys())
     # update users genres
     if genre_set:
+        print(f"User genres main: {genre_set}")
         redis_cache.set_user_genres(token, genre_set)
 
     return artist_ids, artist_track_ids, album_ids, album_track_ids

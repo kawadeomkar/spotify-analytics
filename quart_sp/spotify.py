@@ -31,14 +31,6 @@ class Spotify:
                                    headers={'Authorization': f"Bearer {self.auth_token}"},
                                    # 'Content-Type': 'application/json'},
                                    params=params) as resp:
-            # log.debug(resp.status)
-            # if resp.content_type != 'application/json':
-            #    time.sleep(3)
-            #    print("RESP CONTENT TYPE AINTT IT")
-            #    print(resp.content_type)
-            #    log.debug(resp.content_type)
-            #    time.sleep(3)
-            #    return None
             # disable content types for incorrect mime type responses
             if resp.status == 200 or resp.status == 201:
                 data = await resp.json(content_type=None)
