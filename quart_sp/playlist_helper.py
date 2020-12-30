@@ -31,12 +31,9 @@ async def playlist(genre):
     access_token = session['access_token']
     songs = redis_cache.get_user_genre_tracks(access_token, genre)
     song_info_map = [redis_cache.get_spotify_track_name(t_id) for t_id in songs]
-    try:
-        sorted_song_info_map = sorted(song_info_map,
-                                  key=lambda song: int(song['popularity']),
+    sorted_song_info_map = sorted(song_info_map,
+                                  key=lambda s: int(s['popularity']),
                                   reverse=True)
-    except:
-        raise Exception(str(song_info_map) + " XXX " + str(songs))
 
     sp = spotify.Spotify(access_token)
     d_id, devices = await player.get_device_info(sp)
@@ -57,20 +54,22 @@ async def export():
     if validate:
         return await redirect(validate)
 
-    genre = await request.get_json()['genre']
-    access_token = await session['access_token']
+    genre = (await request.get_json())['genre']
+    access_token = session['access_token']
     sp = spotify.Spotify(access_token)
 
-    with aiohttp.ClientSession(json_serialize=ujson) as sess:
+    async with aiohttp.ClientSession(json_serialize=ujson) as sess:
         # TODO: User sets the genre name
         playlist_id = await create_playlist(sp, sess, genre)
 
-        genres_to_export = redis_cache.get_user_genre_tracks(access_token, genre)
-
+        tracks_to_export = redis_cache.get_user_genre_tracks(access_token, genre)
+        # TODO: Sort on popularity
+        # TODO: Remove hotfix
+        tracks_to_export = ["spotify:track:"+track for track in tracks_to_export]
         # TODO: retry logic in this function? display error if false
-        await add_tracks_to_playlist(sp, playlist_id, genres_to_export)
+        await add_tracks_to_playlist(sp, sess, playlist_id, tracks_to_export)
 
-    return await genre
+    return genre
 
 
 async def get_track_genres(sp: spotify.Spotify,
@@ -155,7 +154,7 @@ async def liked_songs_genre_map(track: Dict[str, Any]) -> bool:
     #         genre_map[genre] = []
     #     genre_map[genre].append(track_obj['id'])
 
-    return success # artist_ids, album_id
+    return success  # artist_ids, album_id
 
 
 async def create_playlist(sp: spotify.Spotify,
@@ -181,8 +180,10 @@ async def add_tracks_to_playlist(sp: spotify.Spotify,
     TODO: position is not used for now (use later to append based on popularity
     TODO: retry logic if HTTPError is thrown?"""
     track_len = len(track_ids)
+
+    print(f"Track IDS: {track_ids}")
     if track_len <= 100:
-        await sp.add_items_to_playlist(playlist_id, track_ids, sess)
+        await sp.add_items_to_playlist(playlist_id, list(track_ids), sess)
     else:
         for items in zip_longest(*(iter(track_ids),) * 100):
             items_filtered = list(filter(None, items))

@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Union
 
 import aiohttp
 import asyncio
+import ujson
 import util
 
 log = util.setLogger(__name__)
@@ -23,13 +24,13 @@ class Spotify:
                         endpoint_route: str,
                         session: aiohttp.ClientSession,
                         params: Dict[str, Union[str, int]] = None,
+                        data: Dict[str, str] = None,
                         http_method='GET'):
-        print(session.closed)
-        print(session)
         async with session.request(http_method,
                                    self.endpoint_prefix + endpoint_route,
                                    headers={'Authorization': f"Bearer {self.auth_token}"},
                                    # 'Content-Type': 'application/json'},
+                                   data=data,
                                    params=params) as resp:
             # disable content types for incorrect mime type responses
             if resp.status == 200 or resp.status == 201:
@@ -39,8 +40,7 @@ class Spotify:
                 log.debug(resp.status)
                 data = await resp.json(content_type=None)
                 log.debug(data)
-                print("IDS COUNT: ")
-                raise Exception(str(data) + "input: " + str(params))
+                raise Exception(str(data) + "input: " + str(data))
 
     async def get_access_token(self):
         return self.auth_token
@@ -80,12 +80,11 @@ class Spotify:
         Creates a playlist, returns id of playlist upon creation
         """
         endpoint_route = f"v1/users/{user_id}/playlists"
-        resp = await self.http_call(endpoint_route,
+        return await self.http_call(endpoint_route,
                                     session,
-                                    params={'name': name, 'public': public,
-                                            'description': description},
+                                    data=ujson.dumps({'name': name, 'public': public,
+                                                      'description': description}),
                                     http_method='POST')
-        return resp['id']
 
     async def add_items_to_playlist(self, playlist_id: str,
                                     tracks: List[str],
@@ -94,7 +93,7 @@ class Spotify:
         Add items to a playlist, returns snapshot id (used to identify playlist version)
         """
         endpoint_route = f"v1/playlists/{playlist_id}/tracks"
-        resp = await self.http_call(endpoint_route, session, params={'uris': tracks},
+        resp = await self.http_call(endpoint_route, session, data=ujson.dumps({'uris': tracks}),
                                     http_method='POST')
         return resp['snapshot_id']
 

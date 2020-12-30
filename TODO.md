@@ -9,6 +9,9 @@ stuff that needs to be done
 ### Authentication:
 - Add logic for refreshing token in auth.py (p2)
 
+### Data Structures
+- prefix tracks with "spotify:track:" to ensure its a track (redis as well)
+
 ### Redis:
 - Add retry logic (currently expects every transaction is sucessful)
 - Add docstrings for each redis transaction

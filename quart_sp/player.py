@@ -35,8 +35,8 @@ async def play_song(sp: spotify.Spotify,
     return True
 
 
-async def get_device_info(sp: spotify.Spotify, session: aiohttp.ClientSession = None) -> Tuple[
-    Union[None, str], Dict]:
+async def get_device_info(sp: spotify.Spotify, session: aiohttp.ClientSession = None) \
+        -> Tuple[Union[None, str], Dict]:
     """ Returns tuple of current device in use and dict of devices"""
     if not session:
         session = aiohttp.ClientSession(json_serialize=ujson)
@@ -55,7 +55,7 @@ async def get_device_info(sp: spotify.Spotify, session: aiohttp.ClientSession = 
         del device['is_private_session']
         del device['volume_percent']
 
-    log.info(d_id)
+    print(f"Current device: {d_id}")
     log.info(devices)
 
     return d_id, devices
