@@ -50,20 +50,20 @@ def set_spotify_track(track_id: str, track_info: Dict[str, str]) -> bool:
     return client.hset(track_id, mapping=track_info)
 
 
-def set_spotify_track_genres(track_id: str, track_genres: List[str]) -> bool:
-    return client.sadd(track_id + "tgenres", *track_genres)
+def set_spotify_track_genres(artist_id: str, track_genres: List[str]) -> bool:
+    return client.sadd(artist_id, *track_genres)
 
 
-def get_spotify_track_genres(track_id: str) -> Union[Set[str], Set[None]]:
-    return client.smembers(track_id + 'tgenres')
+def get_spotify_track_genres(artist_id: str) -> Union[Set[str], Set[None]]:
+    return client.smembers(artist_id)
 
 
-def set_spotify_album_genres(track_id: str, album_genres: List[str]) -> bool:
-    return client.sadd(track_id + "agenres", *album_genres)
+def set_spotify_album_genres(album_id: str, album_genres: List[str]) -> bool:
+    return client.sadd(album_id, *album_genres)
 
 
-def get_spotify_album_genres(track_id: str) -> Union[Set[str], Set[None]]:
-    return client.smembers(track_id + 'agenres')
+def get_spotify_album_genres(album_id: str) -> Union[Set[str], Set[None]]:
+    return client.smembers(album_id)
 
 
 # generic get
@@ -90,7 +90,6 @@ def set_user_genre_tracks(access_token: str, genre_track_map: Dict[str, List[str
 
     for genre, track_list in genre_track_map.items():
         success = success & client.sadd(hash_key + genre, *track_list)
-        print("REDIS -- SAVING: ", hash_key + genre)
         client.expire(hash_key + genre, ttl)
     return success
 

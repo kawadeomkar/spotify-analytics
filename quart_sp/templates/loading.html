@@ -11,14 +11,31 @@
 <script type="text/javascript">
     var token = "{{ access_token }}";
     var count = 0;
+    var total = 0;
     $(document).ready(function () {
 
         // TODO: change connection details when deploying
         var ws = new WebSocket('ws://localhost:5000/load');
         ws.onmessage = function (event) {
-            console.log(event.data);
-            count = count + 1;
-            console.log(count);
+
+            if (event.data === "STOP") {
+                console.log("DONE")
+                console.log(count);
+                document.location.href = "/";
+
+            }
+
+            console.log(isNaN(event.data))
+            if (count == 0 && !isNaN(event.data)) {
+                total = parseInt(event.data);
+                document.getElementById("songs_downloaded").innerText = event.data;
+            } else {
+                if (count != total) {
+                    count = count + 1;
+                    document.getElementById("songs").innerText = event.data;
+                    document.getElementById("song_count").innerText = count.toString();
+                }
+            }
         };
 
         ws.onopen = function (event) {
@@ -54,22 +71,22 @@
         //    console.log("connected!");
 
         //    window.location.replace("/loading");
-            //$.ajax({
-            //    type: 'POST',
-            //    contentType: 'application/json;charset=UTF-8',
-            //    url: "/loading",
-            //    data: "",
-            //    success: function (response) {
-            //        console.log(response);
-            //    },
-            //    error: function (response, error) {
-            //        console.log(response);
-            //        console.log(error);
-            //        document.open();
-            //        document.write(response);
-            //        document.close();
-            //    }
-            //});
+        //$.ajax({
+        //    type: 'POST',
+        //    contentType: 'application/json;charset=UTF-8',
+        //    url: "/loading",
+        //    data: "",
+        //    success: function (response) {
+        //        console.log(response);
+        //    },
+        //    error: function (response, error) {
+        //        console.log(response);
+        //        console.log(error);
+        //        document.open();
+        //        document.write(response);
+        //        document.close();
+        //    }
+        //});
         //});
 
     });
@@ -77,5 +94,7 @@
 <h1>Loading...</h1>
 <p id="songs"></p>
 <p id="song_count"></p>
+<p>/</p>
+<p id="songs_downloaded"></p>
 </body>
 </html>

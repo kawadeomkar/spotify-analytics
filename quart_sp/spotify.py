@@ -47,8 +47,8 @@ class Spotify:
                 log.debug(resp.status)
                 data = await resp.json(content_type=None)
                 log.debug(data)
-                print("IDS COUNT: " )
-                raise Exception(str(data)+ str(params['ids'].count(',')))
+                print("IDS COUNT: ")
+                raise Exception(str(data) + "input: " + str(params))
 
     async def get_access_token(self):
         return self.auth_token
@@ -135,6 +135,7 @@ class Spotify:
         resp = await self.http_call(endpoint_route, session, params={'ids': ','.join(ids)})
         if 'albums' in resp:
             return resp['albums']
+        log.debug(resp)
         return resp
 
     async def get_devices(self, session: aiohttp.ClientSession):

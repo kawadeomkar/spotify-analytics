@@ -15,10 +15,13 @@ stuff that needs to be done
 - Add decorator for logic regarding if access token exists on every set or get call 
 (currently assumes access token is always exists, might want to redir authentication if access token
 expired)
-- Possibly turn this set of functions into a class? Only benefit right now is abstracting `access_token`
-- Consider using hashes (md5) for redis keys (p2)
+- ~~Possibly turn this set of functions into a class? Only benefit right now is abstracting `access_token`
+- Consider using hashes (md5) for redis keys (p2)~~
 - ~~dump redis rdb snapshot for restoring redis instance (p2)~~ (10/30)
-- set TTL for user values based on auth tokens expiry
+- ~~set TTL for user values based on auth tokens expiry~~
+- combine artist and album genres
+- aioredis
+- aioredis user sessions
 
 ### Websockets:
 - add multiple workers to gunicorn with eventlet to support websockets https://flask-socketio.readthedocs.io/en/latest/#using-multiple-workers
