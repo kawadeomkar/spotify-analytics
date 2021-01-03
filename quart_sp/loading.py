@@ -28,7 +28,7 @@ async def load_songs_counts():
         async with aiohttp.ClientSession(json_serialize=ujson) as sess:
             tracks = await sp.current_user_saved_tracks(50, 0, sess)
             # total = result['total']  # TODO: Testing, currently capping at 100
-            total = 500
+            total = 100
             log.info(f"User has a total of {total} tracks")
             await websocket.send(str(total))
 
@@ -152,6 +152,7 @@ async def extract_tracks(sp: spotify.Spotify, sess: aiohttp.ClientSession, track
 
         # emit to front end loading page
         await websocket.send(track_obj['name'])
+        print(track_obj['name'])
 
         # save track to redis and form genre map
         if not redis_cache.exists(track_obj['id']):

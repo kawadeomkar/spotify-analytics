@@ -1,5 +1,3 @@
-import time
-from functools import lru_cache
 from typing import Any, Dict, List, Union
 
 import aiohttp
@@ -37,10 +35,9 @@ class Spotify:
                 data = await resp.json(content_type=None)
                 return data
             else:
-                log.debug(resp.status)
                 data = await resp.json(content_type=None)
-                log.debug(data)
-                raise Exception(str(data) + "input: " + str(data))
+                raise Exception(str(data) + "endpoint:  " + endpoint_route + "data: " + str(
+                    data) + "params: " + str(params))
 
     async def get_access_token(self):
         return self.auth_token

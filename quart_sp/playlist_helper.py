@@ -1,5 +1,4 @@
 # Liked songs library grouped by genre 
-from functools import lru_cache
 from itertools import zip_longest
 from quart import Blueprint, redirect, render_template, request, session
 from typing import Any, Dict, List, Set
@@ -7,12 +6,11 @@ from typing import Any, Dict, List, Set
 import aiohttp
 import auth
 import player
+import re
 import redis_cache
 import spotify
 import ujson
 import util
-
-import time
 
 log = util.setLogger(__name__)
 playlist_route = Blueprint('playlist_route', __name__)
@@ -65,58 +63,11 @@ async def export():
         tracks_to_export = redis_cache.get_user_genre_tracks(access_token, genre)
         # TODO: Sort on popularity
         # TODO: Remove hotfix
-        tracks_to_export = ["spotify:track:"+track for track in tracks_to_export]
+        tracks_to_export = ["spotify:track:" + track for track in tracks_to_export]
         # TODO: retry logic in this function? display error if false
         await add_tracks_to_playlist(sp, sess, playlist_id, tracks_to_export)
 
     return genre
-
-
-async def get_track_genres(sp: spotify.Spotify,
-                           sess: aiohttp.ClientSession,
-                           artist_ids: List[str] = None,
-                           album_id: str = None) -> List[str]:
-    """
-    Returns a set of genres obtained from the album and artist, multiple genres will map to the same
-    track ID in this scenario
-    """
-    # TODO: TESTING
-    global res_pos, res_neg
-
-    genres = set()
-
-    if artist_ids:
-        for a_id in artist_ids:
-            resp = await sp.artists(a_id, sess)
-            artist_genres = []
-            if isinstance(resp, list):
-                for artist in resp:
-                    artist_genres.extend(artist.get('genres', None))
-            else:
-                artist_genres = resp.get('genres', None)
-            if artist_genres:
-                genres.update(artist_genres)
-
-    if album_id:
-        resp = await sp.albums(album_id, sess)
-
-        album_genres = []
-        if isinstance(resp, list):
-            for artist in resp:
-                album_genres.extend(artist.get('genres', None))
-        else:
-            album_genres = resp.get('genres', None)
-        if album_genres:
-            genres.update(artist_genres)
-
-    # TODO: remove analysis
-    if genres:
-        res_pos += 1
-    else:
-        res_neg += 1
-    log.debug(f"HIT: {res_pos} MISS: {res_neg}")
-
-    return genres
 
 
 async def liked_songs_genre_map(track: Dict[str, Any]) -> bool:
@@ -129,11 +80,15 @@ async def liked_songs_genre_map(track: Dict[str, Any]) -> bool:
 
     log.info(track_obj['name'])
 
+    cleaned_tname = re.sub("(\"|\')", "\\1", track_obj['name'])
+
+    if "Breaking" in track_obj['name']:
+        raise Exception(cleaned_tname)
     # save song track info to redis
     track_info = {
         # @Future: Possibly dump all information? (external url, uri)
         'artists': ujson.dumps([artist['name'] for artist in track_obj['artists']]),
-        'name': track_obj['name'],
+        'name': cleaned_tname,
         'duration': track_obj['duration_ms'],  # in milliseconds
         'spotify_url': track_obj['external_urls']['spotify'],
         'popularity': track_obj['popularity']
@@ -141,19 +96,6 @@ async def liked_songs_genre_map(track: Dict[str, Any]) -> bool:
 
     # save spotify track in redis
     success = redis_cache.set_spotify_track(track_obj['id'], track_info)
-
-    # extract genres
-    # artist_ids = [artist['id'] for artist in track_obj['artists']]
-    # album_id = track_obj['album']['id']
-
-    # genres = await get_track_genres(sp, sess, artist_ids=artist_ids, album_id=album_id)
-
-    # TODO: figure out what to do if there is no genre associated with a track
-    # for genre in genres:
-    #     if genre not in genre_map:
-    #         genre_map[genre] = []
-    #     genre_map[genre].append(track_obj['id'])
-
     return success  # artist_ids, album_id
 
 

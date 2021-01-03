@@ -8,7 +8,7 @@
             crossorigin="anonymous"></script>
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <script>
-        let song_info_map = JSON.parse('{{ song_info_map | tojson | safe }}');
+        let song_info_map = JSON.parse('{{ song_info_map | tojson }}');
         let device_id = '{{ d_id }}';
         let devices =  JSON.parse('{{ devices | tojson | safe }}');
 
