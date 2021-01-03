@@ -39,11 +39,11 @@ log = util.setLogger(__name__)
 @app.route('/', methods=['POST', 'GET'])
 async def spotify_analytics():
     if not redis_cache.ping():  # TODO: remove after done with testing
-        print("CANT CONNECT TO REDIS")
+        raise Exception("Failed to connect to Redis")
 
     validate = auth.validateAccessToken()
     if validate:
-        return redirect(validate)
+        return await render_template('login.html', login_redir=validate) # redirect(validate)
 
     access_token = session['access_token']
     log.info(f"Access token: {access_token}")

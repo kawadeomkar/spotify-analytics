@@ -2,6 +2,21 @@
 <html>
 <head>
     <title>SpotifyAnalytics</title>
+    <script>
+
+    function htmlDecode(input){
+      var e = document.createElement('textarea');
+      e.innerHTML = input;
+      // handle case of empty input
+      return e.childNodes.length === 0 ? "" : e.childNodes[0].nodeValue;
+    }
+
+    function redirect() {
+      var login_redir = '{{ login_redir }}';
+      console.log('{{ login_redir }}');
+      window.location.replace(htmlDecode(login_redir));
+    }
+    </script>
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.min.js"
             integrity="sha512-Jq1JnVXlkYQOYQpz31qIV/0l67d97J9I6sbILtfiSYX00Isr2zK7XDRmHW8d2iBTwNZfL7sHkHGT0EzLs90jdw=="
             crossorigin="anonymous"></script> -->
@@ -23,7 +38,7 @@
         <p style="text-align: center; font-family: Verdana, sans-serif; font-size: 20px; font-weight: 300;">
           Automatically organize your music by genre and create playlists with the click of a button.  
         </p>
-        <button class="button button1">LOGIN WITH SPOTIFY</button>
+        <button id="login-button" onclick="redirect()" class="button button1">LOGIN WITH SPOTIFY</button>
         </div>
 </body>
 
