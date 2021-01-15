@@ -19,8 +19,6 @@ loading_route = Blueprint('loading_route', __name__)
 @loading_route.websocket("/load")
 async def load_songs_counts():
     access_token = await websocket.receive()
-    log.debug("access_token: ", access_token)
-
     # TODO: Authentication quart-auth ?
 
     try:
