@@ -70,33 +70,7 @@ async def export():
     return genre
 
 
-async def liked_songs_genre_map(track: Dict[str, Any]) -> bool:
-    """
-    Extracts artist and album id from each saved track and attempts to grab all related genres. Each
-    track is then associated with 0 or more genres.
-    Sets each spotify track id to its name in redis, default (none) TTL expiry
-    """
-    track_obj = track['track']
 
-    log.info(track_obj['name'])
-
-    cleaned_tname = re.sub("(\"|\')", "\\1", track_obj['name'])
-
-    if "Breaking" in track_obj['name']:
-        raise Exception(cleaned_tname)
-    # save song track info to redis
-    track_info = {
-        # @Future: Possibly dump all information? (external url, uri)
-        'artists': ujson.dumps([artist['name'] for artist in track_obj['artists']]),
-        'name': cleaned_tname,
-        'duration': track_obj['duration_ms'],  # in milliseconds
-        'spotify_url': track_obj['external_urls']['spotify'],
-        'popularity': track_obj['popularity']
-    }
-
-    # save spotify track in redis
-    success = redis_cache.set_spotify_track(track_obj['id'], track_info)
-    return success  # artist_ids, album_id
 
 
 async def create_playlist(sp: spotify.Spotify,
