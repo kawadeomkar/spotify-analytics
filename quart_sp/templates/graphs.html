@@ -42,7 +42,9 @@
     svg.append("g")
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(x)
-            .ticks(maa_df.length));
+            .ticks(maa_df.length)
+            //.tickFormat(d=>d3.timeFormat("%a %d")(d)) TODO: time format
+        );
 
     const max = d3.max(maa_df, function(item) {
         return item.count;
