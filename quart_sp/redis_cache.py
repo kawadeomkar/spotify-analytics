@@ -141,7 +141,9 @@ def get_user_genre_track_obj_map(access_token: str):
             ret[genre].append(get_spotify_track_name(tid))
     return ret
 
+
 ### DEPRECATED
+
 def set_user_genre_track_count_v0(access_token: str, genre_track_map: Dict[str, List[str]]) -> None:
     hash_key = md5(access_token.encode('utf-8')).hexdigest()
     genre_track_count: Dict[str, int] = {k: len(v) for k, v in genre_track_map.items()}
