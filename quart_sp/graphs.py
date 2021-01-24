@@ -1,12 +1,11 @@
+import collections
 from functools import reduce, wraps
 from quart import Blueprint, redirect, session, render_template
-from typing import Dict, List, Tuple, Union
 
 import auth
 import operator
 import pandas as pd
 import redis_cache
-import spotify
 import time
 import ujson
 import util
@@ -19,14 +18,21 @@ graphs_route = Blueprint('graphs_route', __name__)
 async def graphs():
     validate = auth.validateAccessToken()
     if validate:
-        return await redirect(validate)
+        return redirect(validate)
 
     access_token = session['access_token']
     try:
         user_gtom = redis_cache.get_user_genre_track_obj_map(access_token)
         df_gtom = _convert_json_to_pandas_df(user_gtom)
-        maa_df = _monthly_added_at_graph(df_gtom)
+        maa_df = df_gtom.copy(deep=True)
+        maa_df = _monthly_added_at_graph(maa_df)
         maa_df = [{"date": added_at, "count": count} for added_at, count in maa_df.items()]
+        print(maa_df[:3])
+
+        log.info(f"MGC DF BEFORE COPY: {df_gtom}")
+        mgc_df = df_gtom.copy(deep=True)
+        mgc_dict = _monthly_genre_count_graph(df_gtom.copy(deep=True))
+
 
     except Exception as e:
         raise Exception(str(e))
@@ -50,12 +56,33 @@ def df_to_pds(func):
     return convert
 
 
-@df_to_pds
 def _monthly_added_at_graph(df_gtom: pd.DataFrame) -> pd.DataFrame:
     # Assumes index is a datetime object
-    maa_df = df_gtom['genre'].groupby([pd.Grouper(freq='M')]).size()
+    maa_df = df_gtom.drop_duplicates(subset='track_id', keep='last')
+    log.info(maa_df.head())
+    maa_df = maa_df.groupby(
+        [pd.Grouper(freq='M')]).size()
+    log.info(maa_df.head())
     maa_df = _month_year_added_at_format_time(maa_df)
     return maa_df
+
+
+def _monthly_genre_count_graph(df_gtom: pd.DataFrame) -> pd.DataFrame:
+    log.info(df_gtom.index)
+    log.info(f"DF GTOM MGC {df_gtom.head()}, DTYPES: {df_gtom.dtypes}")
+    mgc_df = df_gtom[['genre']].groupby([
+        pd.Grouper(freq='M'), 'genre']).size().to_frame('size').reset_index()
+    mgc_df = _month_year_added_at_format_time(mgc_df)
+    mgc_dict = mgc_df.to_dict('records')
+
+    mgc_map = collections.defaultdict(dict)
+    for d in mgc_dict:
+        mgc_map[d['added_at']][d['genre']] = d['size']
+        if d['added_at'] not in mgc_map[d['added_at']]:
+            mgc_map[d['added_at']]['added_at'] = d['added_at']
+    mgc_map = mgc_map.values()
+    log.info(f"MGC MAP: {mgc_map}")
+    return list(mgc_map)
 
 
 def _monthly_stacked_genre_barchart(df_gtom: pd.DataFrame) -> pd.DataFrame:
@@ -86,15 +113,32 @@ def _popularity_mean(df_gtom: pd.DataFrame) -> float:
 
 def _convert_json_to_pandas_df(user_gtom):
     # normalize gtom dict to list of dicts
-    for genre, t_objs in user_gtom.items():
-        for t_obj in t_objs:
-            t_obj['genre'] = genre
-    to_df = reduce(operator.iconcat, user_gtom.values(), [])
-    df_gtom = pd.json_normalize(to_df)
+    # log.info(f"GENRE KEYS: {user_gtom.keys()} LEN {len(user_gtom)}")
+    for obj in user_gtom:
+        if 'name' not in obj.keys() or 'album' not in obj.keys() or 'artists' \
+                not in obj.keys() or 'popularity' not in obj.keys() \
+                or 'genre' not in obj.keys() \
+                or 'added_at' not in obj.keys() or 'track_id' \
+                not in obj.keys():
+
+            raise Exception(f"TRACK OBJ MISSING KEYS {str(obj)}")
+        log.info(f"TO DF FIRST 5 {user_gtom[:4]}")
+    to_df = user_gtom  # reduce(operator.iconcat, user_gtom.values(), [])
+    log.info(f"TO DF: {to_df[0]}")
+
+    df_gtom = pd.DataFrame(to_df, index=None)
+    df_gtom = df_gtom.loc[:, ~df_gtom.columns.str.contains('^Unnamed')]
+    log.info(f"DF DTYPES BEFORE {df_gtom.dtypes}")
+    log.info(f"DF HEAD {df_gtom.iloc[:4]}")
+    log.info(df_gtom['added_at'])
     df_gtom['added_at'] = pd.to_datetime(df_gtom['added_at'])
+
+    log.info(f"DF DTYPES: {df_gtom.dtypes}")
     df_gtom = df_gtom.set_index('added_at')
 
-    # docker cp quart_sp:/usr/src/data.csv .
-    # df_gtom.to_csv('data.csv', encoding='utf-8')
+    log.info(f" DF TYPE {type(df_gtom)}")
+    # log.info(f"{df_gtom.head}")
+    # docker cp quart_sp:/usr/src/quart_sp/data.csv .
+    df_gtom.to_csv('data.csv', encoding='utf-8')
 
     return df_gtom

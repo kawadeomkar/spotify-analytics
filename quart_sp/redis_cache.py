@@ -1,6 +1,7 @@
 import asyncio
+from collections import defaultdict
 from hashlib import md5
-from typing import Any, List, Dict, Union, Set
+from typing import Any, Optional, List, Dict, Union, Set
 
 import os
 import redis
@@ -63,7 +64,7 @@ def set_user_genres(access_token: str, genres: List[str]) -> bool:
     return success
 
 
-def get_user_genre_tracks(access_token: str, genre: str) -> Union[Set[str], Set[None]]:
+def get_user_genre_tracks(access_token: str, genre: str) -> Optional[Set[str]]:
     hash_key = md5(access_token.encode('utf-8')).hexdigest()
     return client.smembers(hash_key + genre)
 
@@ -71,7 +72,7 @@ def get_user_genre_tracks(access_token: str, genre: str) -> Union[Set[str], Set[
 def set_user_genre_tracks(access_token: str, genre_track_map: Dict[str, List[str]]) -> bool:
     # Don't need to use "set_expire_to_access_token" func here, saving one call per sadd here
     hash_key = md5(access_token.encode('utf-8')).hexdigest()
-    print(f"User genre track map: {genre_track_map}")
+    log.info(f"User genre track map: {genre_track_map}")
     asyncio.sleep(0.5)  # TODO: for testing
     ttl = client.ttl(hash_key)
     success = True
@@ -90,9 +91,27 @@ def get_user_genre_track_count(access_token: str) -> Dict[str, str]:
 def set_user_genre_track_count(access_token: str):
     hash_key = md5(access_token.encode('utf-8')).hexdigest()
     user_genres = _get_user_genres(hash_key)
+    if "NA" in user_genres:
+        user_genres.remove("NA")
+
     user_gtc = {genre: client.scard(hash_key + genre) for genre in user_genres}
     success = client.hset(hash_key + 'gtc', mapping=user_gtc)
     set_expire_to_access_token(hash_key, hash_key + 'gtc')
+    return success
+
+
+def get_user_tracks_added_at(access_token, track_ids: List[str] = None):
+    hash_key = md5(access_token.encode('utf-8')).hexdigest()
+    if not track_ids:
+        return client.hgetall(hash_key + 'taa')
+    else:
+        return client.hmget(hash_key + 'taa', track_ids)
+
+
+def set_user_tracks_added_at(access_token: str, tid_added_at_map: Dict[str, str]) -> bool:
+    hash_key = md5(access_token.encode('utf-8')).hexdigest()
+    success = client.hset(hash_key + 'taa', mapping=tid_added_at_map)
+    set_expire_to_access_token(hash_key, hash_key + 'taa')
     return success
 
 
@@ -110,11 +129,11 @@ def set_spotify_track(track_id: str, track_info: Dict[str, str]) -> bool:
     return client.hset(track_id, mapping=track_info)
 
 
-def get_spotify_track_genres(artist_id: str) -> Union[Set[str], Set[None]]:
+def get_spotify_artist_genres(artist_id: str) -> Union[Set[str], Set[None]]:
     return client.smembers(artist_id)
 
 
-def set_spotify_track_genres(artist_id: str, artist_genres: List[str]) -> bool:
+def set_spotify_artist_genres(artist_id: str, artist_genres: List[str]) -> bool:
     return client.sadd(artist_id, *artist_genres)
 
 
@@ -123,6 +142,8 @@ def get_spotify_album_genres(album_id: str) -> Union[Set[str], Set[None]]:
 
 
 def set_spotify_album_genres(album_id: str, album_genres: List[str]) -> bool:
+    #print(type(album_genres))
+    #raise Exception(str(album_genres))
     return client.sadd(album_id, *album_genres)
 
 
@@ -132,13 +153,49 @@ def get_user_genre_track_obj_map(access_token: str):
     hash_key = md5(access_token.encode('utf-8')).hexdigest()
     user_genres = _get_user_genres(hash_key)
     # TODO: scale TTL on popularity to be min 2 hrs, hash_key in `get_user_genre_tracks`?
-    genres_user_track_id_map = {genre: get_user_genre_tracks(access_token, genre)
-                                for genre in user_genres}
-    ret = {}
+    genres_user_track_id_map = defaultdict(set)
+
+    #log.info(f"USER GENRES: {user_genres}")
+    na_tids = set()
+    if "NA" in user_genres:
+        na_tids = get_user_genre_tracks(access_token, "NA")
+
+    log.info(f"LEN OF USER GENRES: {len(user_genres)}")
+    # TODO: async for on generator
+    for genre in user_genres:
+        if genre == "NA":
+            log.info(f"SKIPPING GENRE: {genre}")
+            continue
+        ugts = get_user_genre_tracks(access_token, genre)
+
+        # log.info(f"USER GTS FOR GENRE {genre} : USER GTS: {ugts}")
+        for track_id in ugts:
+            if track_id in na_tids:
+                # TODO: update redis -> remove n/a from non n/a genres
+                # log.info(f"Adding TRACK ID {track_id} TO GENRE {genre}")
+                na_tids.remove(track_id)
+            genres_user_track_id_map[genre].add(track_id)
+
+    log.info(f"LEN OF NAs {len(na_tids)}")
+    genres_user_track_id_map['NA'] = na_tids
+    # log.info("GTS")
+    log.info(f"LEN OF GUTIM: {len(genres_user_track_id_map)}")
+
+    ret = []
     for genre, tids in genres_user_track_id_map.items():
-        ret[genre] = []
-        for tid in tids:
-            ret[genre].append(get_spotify_track_name(tid))
+
+        added_ats = get_user_tracks_added_at(access_token, tids)
+
+        for tid, added_at in zip(tids, added_ats):
+            t_obj = get_spotify_track_name(tid)
+            t_obj['added_at'] = added_at
+            t_obj['track_id'] = tid
+            t_obj['genre'] = genre
+            del t_obj['preview_url']
+            del t_obj['spotify_url']
+            log.info(t_obj)
+            ret.append(t_obj)
+
     return ret
 
 
