@@ -156,30 +156,35 @@
     //    .domain(subgroups)
     //    .range(['#e41a1c', '#377eb8', '#4daf4a'])
 
-    console.log(d3);
-    console.log(d3.version);
-
     var color = d3.scaleSequential()
-	    .domain([0, subgroups.length])
-	    .interpolator(d3.interpolateSpectral);
+        .domain([0, subgroups.length])
+        .interpolator(d3.interpolateSpectral);
 
     //stack the data? --> stack per subgroup
+    console.log("DATA AND STACKED DATA");
+    console.log(data);
     var stackedData = d3.stack()
-        .keys(subgroups)
-        (data)
+        .keys(subgroups)(data).map(d => (d.forEach(v => v.key = d.key), d))
 
     console.log(stackedData);
+    // console.log(stackedData);
 
     // Show the bars
     svg.append("g")
         .selectAll("g")
         // Enter in the stack data = loop key per key = group per group
         .data(stackedData)
-        .enter().append("g")
+        .join("g")
+        .filter(function(d) {
+            //var x = [...Array(d.length).keys()].map(g => {
+            //    if d[g]
+            //})
+            return d[0] != d[1];
+        })
         .attr("fill", function (d) {
-            console.log("COLOR");
-            console.log(d);
-            console.log(color(d.index));
+            //console.log("COLOR");
+            //console.log(d);
+            //console.log(color(d.index));
             return color(d.index);
         })
         .selectAll("rect")
@@ -210,6 +215,38 @@
             }
         })
         .attr("width", x.bandwidth())
+        .on("mouseover", function () {
+            tooltip.style("display", null);
+        })
+        .on("mouseout", function () {
+            tooltip.style("display", "none");
+        })
+        .on("mousemove", (event, d) => {
+            var xPosition = d3.pointer(event)[0] - 15;
+            var yPosition = d3.pointer(event)[1] - 25;
+            tooltip.attr("transform", "translate(" + xPosition + "," + yPosition + ")");
+            console.log("tooltip");
+            console.log(d);
+            tooltip.select("text").text(d.key);
+        });
+
+    // Prep the tooltip bits, initial display is hidden
+    var tooltip = svg.append("g")
+        .attr("class", "tooltip")
+        .style("display", "none");
+
+    tooltip.append("rect")
+        .attr("width", 30)
+        .attr("height", 20)
+        .attr("fill", "white")
+        .style("opacity", 0.5);
+
+    tooltip.append("text")
+        .attr("x", 15)
+        .attr("dy", "1.2em")
+        .style("text-anchor", "middle")
+        .attr("font-size", "12px")
+        .attr("font-weight", "bold");
 
 
 </script>

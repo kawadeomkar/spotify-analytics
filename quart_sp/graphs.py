@@ -1,4 +1,5 @@
 import collections
+from copy import deepcopy
 from functools import reduce, wraps
 from quart import Blueprint, redirect, session, render_template
 
@@ -27,18 +28,18 @@ async def graphs():
         maa_df = df_gtom.copy(deep=True)
         maa_df = _monthly_added_at_graph(maa_df)
         maa_df = [{"date": added_at, "count": count} for added_at, count in maa_df.items()]
-        print(maa_df[:3])
 
         log.info(f"MGC DF BEFORE COPY: {df_gtom}")
         mgc_df = df_gtom.copy(deep=True)
-        mgc_dict, mgc_genres = _monthly_genre_count_graph(df_gtom.copy(deep=True))
+        mgc_dict, mgc_genres = _monthly_genre_count_graph(mgc_df)
 
 
 
     except Exception as e:
         raise Exception(str(e))
 
-    return await render_template('graphs.html', maa_df=maa_df, mgc_dict=mgc_dict, mgc_genres=mgc_genres)
+    return await render_template('graphs.html', maa_df=maa_df, mgc_dict=mgc_dict,
+                                 mgc_genres=mgc_genres)
 
 
 def df_to_pds(func):
@@ -72,24 +73,18 @@ def _monthly_added_at_graph(df_gtom: pd.DataFrame) -> pd.DataFrame:
 def _monthly_genre_count_graph(df_gtom: pd.DataFrame):
     log.info(df_gtom.index)
     log.info(f"DF GTOM MGC {df_gtom.head()}, DTYPES: {df_gtom.dtypes}")
-    mgc_df = df_gtom[['genre']].groupby([
-        pd.Grouper(freq='M'), 'genre']).size().to_frame('size').reset_index()
-    mgc_df = _month_year_added_at_format_time(mgc_df)
-    mgc_dict = mgc_df.to_dict('records')
+    mgc_df = df_gtom[['genre']].groupby([pd.Grouper(freq='M'), 'genre']).size() \
+        .unstack(level=1).reset_index().drop('NA', axis=1, errors='ignore').fillna(0)
+    mgc = _month_year_added_at_format_time(mgc_df).to_dict('records')
+    mgc_genre_set = deepcopy(mgc[0])
+    del mgc_genre_set['added_at']
+    mgc_genre_set = mgc_genre_set.keys()
+    if 'NA' in mgc_genre_set:
+        del mgc_genre_set['NA']
 
-    mgc_map = collections.defaultdict(dict)
-    mgc_genre_set = set()
-    for d in mgc_dict:
-        if d['genre'] == "NA":
-            continue
-        mgc_genre_set.add(d['genre'])
-        mgc_map[d['added_at']][d['genre']] = d['size']
-        if d['added_at'] not in mgc_map[d['added_at']]:
-            mgc_map[d['added_at']]['added_at'] = d['added_at']
-    mgc_map = mgc_map.values()
-    log.info(f"MGC MAP: {mgc_map}")
+    log.info(f"MGC MAP: {mgc}")
     log.info(f"MGC GENRE SET {mgc_genre_set}")
-    return list(mgc_map), list(mgc_genre_set)
+    return list(mgc), list(mgc_genre_set)
 
 
 def _monthly_stacked_genre_barchart(df_gtom: pd.DataFrame) -> pd.DataFrame:
@@ -127,7 +122,6 @@ def _convert_json_to_pandas_df(user_gtom):
                 or 'genre' not in obj.keys() \
                 or 'added_at' not in obj.keys() or 'track_id' \
                 not in obj.keys():
-
             raise Exception(f"TRACK OBJ MISSING KEYS {str(obj)}")
         log.info(f"TO DF FIRST 5 {user_gtom[:4]}")
     to_df = user_gtom  # reduce(operator.iconcat, user_gtom.values(), [])
