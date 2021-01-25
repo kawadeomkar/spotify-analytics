@@ -31,17 +31,19 @@ async def graphs():
 
         log.info(f"MGC DF BEFORE COPY: {df_gtom}")
         mgc_df = df_gtom.copy(deep=True)
-        mgc_dict = _monthly_genre_count_graph(df_gtom.copy(deep=True))
+        mgc_dict, mgc_genres = _monthly_genre_count_graph(df_gtom.copy(deep=True))
+
 
 
     except Exception as e:
         raise Exception(str(e))
 
-    return await render_template('graphs.html', maa_df=maa_df)
+    return await render_template('graphs.html', maa_df=maa_df, mgc_dict=mgc_dict, mgc_genres=mgc_genres)
 
 
 def df_to_pds(func):
-    """Calculates pd.DataFrame -> python data structure conversion runtime and returns result"""
+    """For testing
+    Calculates pd.DataFrame -> python data structure conversion runtime and returns result"""
 
     @wraps(func)
     def convert(*args, **kwargs):
@@ -67,7 +69,7 @@ def _monthly_added_at_graph(df_gtom: pd.DataFrame) -> pd.DataFrame:
     return maa_df
 
 
-def _monthly_genre_count_graph(df_gtom: pd.DataFrame) -> pd.DataFrame:
+def _monthly_genre_count_graph(df_gtom: pd.DataFrame):
     log.info(df_gtom.index)
     log.info(f"DF GTOM MGC {df_gtom.head()}, DTYPES: {df_gtom.dtypes}")
     mgc_df = df_gtom[['genre']].groupby([
@@ -76,13 +78,18 @@ def _monthly_genre_count_graph(df_gtom: pd.DataFrame) -> pd.DataFrame:
     mgc_dict = mgc_df.to_dict('records')
 
     mgc_map = collections.defaultdict(dict)
+    mgc_genre_set = set()
     for d in mgc_dict:
+        if d['genre'] == "NA":
+            continue
+        mgc_genre_set.add(d['genre'])
         mgc_map[d['added_at']][d['genre']] = d['size']
         if d['added_at'] not in mgc_map[d['added_at']]:
             mgc_map[d['added_at']]['added_at'] = d['added_at']
     mgc_map = mgc_map.values()
     log.info(f"MGC MAP: {mgc_map}")
-    return list(mgc_map)
+    log.info(f"MGC GENRE SET {mgc_genre_set}")
+    return list(mgc_map), list(mgc_genre_set)
 
 
 def _monthly_stacked_genre_barchart(df_gtom: pd.DataFrame) -> pd.DataFrame:
