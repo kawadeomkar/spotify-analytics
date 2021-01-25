@@ -34,14 +34,14 @@ async def graphs():
 
         log.info(f"MGC DF BEFORE COPY: {df_gtom}")
         mgc_df = df_gtom.copy(deep=True)
-        mgc_dict, mgc_genres = _monthly_genre_count_graph(mgc_df)
+        mgc_dict, mgc_genres, mgc_height = _monthly_genre_count_graph(mgc_df)
 
 
     except Exception as e:
         raise Exception(str(e))
 
     return await render_template('graphs.html', maa_df=maa_df, mgc_dict=mgc_dict,
-                                 mgc_genres=mgc_genres)
+                                 mgc_genres=mgc_genres, mgc_height=mgc_height)
 
 
 def df_to_pds(func):
@@ -82,6 +82,7 @@ def _monthly_genres(mgc_row):
         del mgc_genre_set['NA']
     return mgc_genre_set
 
+
 def _monthly_genre_count_graph(df_gtom: pd.DataFrame):
     log.info(df_gtom.index)
     log.info(f"DF GTOM MGC {df_gtom.head()}, DTYPES: {df_gtom.dtypes}")
@@ -93,8 +94,8 @@ def _monthly_genre_count_graph(df_gtom: pd.DataFrame):
 
     log.info(f"MGC MAP: {mgc}")
     # top 10 genres per month and collective genres
-    mgc, mgc_genre_set = _monthly_stacked_genre_bc_filter(list(mgc))
-    return mgc, mgc_genre_set
+    mgc, mgc_genre_set, max_height = _monthly_stacked_genre_bc_filter(list(mgc))
+    return mgc, mgc_genre_set, max_height
 
 
 def _monthly_stacked_genre_barchart(df_gtom: pd.DataFrame) -> pd.DataFrame:
@@ -113,17 +114,19 @@ def _monthly_stacked_genre_bc_filter(mgc_list: List[dict]):
     """IN PLACE"""
 
     mgc_genres = set()
+    max_height = 0
     for i in range(len(mgc_list)):
         add_val = mgc_list[i]['added_at']
         del mgc_list[i]['added_at']
         top_ten = dict(collections.Counter(mgc_list[i]).most_common(10))
         mgc_genres.update(list(top_ten.keys()))
+        max_height = max(max_height, sum(top_ten.values()))
         top_ten['added_at'] = add_val
         mgc_list[i] = top_ten
 
     log.info(f"MGBC FILTER MGC LIST {mgc_list}")
     log.info(f"MGBC FILTER MGC GENRES {mgc_genres}")
-    return mgc_list, list(mgc_genres)
+    return mgc_list, list(mgc_genres), max_height
 
 
 # Currently only applies function to index

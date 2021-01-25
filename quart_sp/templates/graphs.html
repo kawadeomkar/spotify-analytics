@@ -110,6 +110,8 @@
     // Parse the Data
     var data = JSON.parse('{{ mgc_dict | tojson | safe }}');
     var genres = JSON.parse('{{ mgc_genres | tojson | safe }}');
+    var mgc_height = JSON.parse('{{ mgc_height | tojson | safe }}');
+
     console.log(data);
     console.log(genres);
 
@@ -144,7 +146,7 @@
 
     // Add Y axis
     var y = d3.scaleLinear()
-        .domain([0, 110])
+        .domain([0, mgc_height])
         .range([height, 0]);
 
 
