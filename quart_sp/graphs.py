@@ -1,9 +1,12 @@
 import collections
 from copy import deepcopy
 from functools import reduce, wraps
+from typing import List
+
 from quart import Blueprint, redirect, session, render_template
 
 import auth
+import heapq
 import operator
 import pandas as pd
 import redis_cache
@@ -32,7 +35,6 @@ async def graphs():
         log.info(f"MGC DF BEFORE COPY: {df_gtom}")
         mgc_df = df_gtom.copy(deep=True)
         mgc_dict, mgc_genres = _monthly_genre_count_graph(mgc_df)
-
 
 
     except Exception as e:
@@ -70,32 +72,58 @@ def _monthly_added_at_graph(df_gtom: pd.DataFrame) -> pd.DataFrame:
     return maa_df
 
 
+def _monthly_genres(mgc_row):
+    """mgc_row: dictionary of one month of {genre->size} with an added_at key,
+    contains all genres (unstacked from transpose on multiindex from groupby)"""
+    mgc_genre_set = deepcopy(mgc_row)
+    del mgc_genre_set['added_at']
+    mgc_genre_set = mgc_genre_set.keys()
+    if 'NA' in mgc_genre_set:
+        del mgc_genre_set['NA']
+    return mgc_genre_set
+
 def _monthly_genre_count_graph(df_gtom: pd.DataFrame):
     log.info(df_gtom.index)
     log.info(f"DF GTOM MGC {df_gtom.head()}, DTYPES: {df_gtom.dtypes}")
     mgc_df = df_gtom[['genre']].groupby([pd.Grouper(freq='M'), 'genre']).size() \
         .unstack(level=1).reset_index().drop('NA', axis=1, errors='ignore').fillna(0)
     mgc = _month_year_added_at_format_time(mgc_df).to_dict('records')
-    mgc_genre_set = deepcopy(mgc[0])
-    del mgc_genre_set['added_at']
-    mgc_genre_set = mgc_genre_set.keys()
-    if 'NA' in mgc_genre_set:
-        del mgc_genre_set['NA']
+
+    # genre_set = _monthly_genres(mgc[0]) # too many genres in d3 group bar
 
     log.info(f"MGC MAP: {mgc}")
-    log.info(f"MGC GENRE SET {mgc_genre_set}")
-    return list(mgc), list(mgc_genre_set)
+    # top 10 genres per month and collective genres
+    mgc, mgc_genre_set = _monthly_stacked_genre_bc_filter(list(mgc))
+    return mgc, mgc_genre_set
 
 
 def _monthly_stacked_genre_barchart(df_gtom: pd.DataFrame) -> pd.DataFrame:
     msbc_df = df_gtom[['genre']].groupby([pd.Grouper(freq='M'), 'genre'], as_index=False).size()
     msbc_df = _month_year_added_at_format_time(msbc_df)
     msbc_dict = {}
+
     for _, row in msbc_df.iterrows():
         if row['added_at'] not in msbc_dict:
             msbc_dict[row['added_at']] = {}
         msbc_dict[row['added_at']][row['genre']] = row['size']
     return msbc_dict
+
+
+def _monthly_stacked_genre_bc_filter(mgc_list: List[dict]):
+    """IN PLACE"""
+
+    mgc_genres = set()
+    for i in range(len(mgc_list)):
+        add_val = mgc_list[i]['added_at']
+        del mgc_list[i]['added_at']
+        top_ten = dict(collections.Counter(mgc_list[i]).most_common(10))
+        mgc_genres.update(list(top_ten.keys()))
+        top_ten['added_at'] = add_val
+        mgc_list[i] = top_ten
+
+    log.info(f"MGBC FILTER MGC LIST {mgc_list}")
+    log.info(f"MGBC FILTER MGC GENRES {mgc_genres}")
+    return mgc_list, list(mgc_genres)
 
 
 # Currently only applies function to index
