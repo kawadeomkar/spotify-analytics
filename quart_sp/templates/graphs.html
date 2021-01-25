@@ -140,9 +140,7 @@
     //}))).range([0, width]);
 
 
-    svg.append("g")
-        .attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x).tickSizeOuter(0));
+
 
     // Add Y axis
     var y = d3.scaleLinear()
@@ -150,8 +148,7 @@
         .range([height, 0]);
 
 
-    svg.append("g")
-        .call(d3.axisLeft(y));
+
 
     // color palette = one color per subgroup
     //var color = d3.scaleOrdinal()
@@ -169,32 +166,22 @@
         .keys(subgroups)(data).map(d => (d.forEach(v => v.key = d.key), d))
 
     console.log(stackedData);
-    // console.log(stackedData);
 
     // Show the bars
-    svg.append("g")
+    var sv = svg.append("g")
         .selectAll("g")
-        // Enter in the stack data = loop key per key = group per group
         .data(stackedData)
         .join("g")
-        .filter(function(d) {
-            //var x = [...Array(d.length).keys()].map(g => {
-            //    if d[g]
-            //})
-            return d[0] != d[1];
-        })
         .attr("fill", function (d) {
-            //console.log("COLOR");
-            //console.log(d);
-            //console.log(color(d.index));
             return color(d.index);
         })
-        .selectAll("rect")
-        // enter a second time = loop subgroup per subgroup to add all rectangles
+
+    sv.selectAll("rect")
         .data(function (d) {
             return d;
         })
-        .enter().append("rect")
+        .enter()
+        .append("rect")
         .attr("x", function (d) {
             return x(d.data.added_at);
         })
@@ -203,13 +190,6 @@
         })
         .attr("height", function (d) {
             var ret = y(d[0]) - y(d[1]);
-            //console.log("HEIGHT");
-            //console.log(d[0]);
-            //console.log(d[1]);
-            //console.log(y(d[0]));
-            //console.log(y(d[1]));
-            //console.log(ret);
-
             if (isNaN(ret)) {
                 return 0;
             } else {
@@ -230,7 +210,63 @@
             console.log("tooltip");
             console.log(d);
             tooltip.select("text").text(d.key);
+        })
+
+    sv.selectAll("text")
+        .data(function (d) {
+            console.log("TEXT");
+            console.log(d);
+            return d;
+        })
+        .enter()
+        .append("text")
+        .attr("x", function (d) {
+            console.log(d);
+            console.log("X");
+            console.log(x(d.data.added_at));
+            if (!isNaN(d[1])) {
+                return x(d.data.added_at);
+            }
+        })
+        .attr("y", function(d, i) {
+            console.log("Y");
+            console.log(d);
+            console.log(y(d[1]));
+            if (!isNaN(d[1])) {
+               return y(d[1]);
+            }})
+        .attr("dy", ".35em")
+        .style("text-anchor", "middle")
+        .style("stroke", 'black')
+        .text(function (d) {
+            if (!isNaN(d[1])) {
+                return d.key;
+            }
         });
+
+    svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x).tickSizeOuter(0));
+
+    svg.append("g")
+        .call(d3.axisLeft(y));
+
+
+        //.append("text")
+        //.text(function (d) {
+        //    return d.key;
+        //})
+        /////.attr("x", function (d) {
+        /////    console.log(d);
+        /////    return d.data.added_at;
+        /////})
+        //.attr("y", function (d) {
+        //    console.log(d);
+        //    return y(d[1]);
+        //})
+
+    // add text
+
 
     // Prep the tooltip bits, initial display is hidden
     var tooltip = svg.append("g")
