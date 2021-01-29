@@ -1,12 +1,13 @@
 from functools import reduce
 from quart import Blueprint, redirect, session, url_for, websocket
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import aiohttp
 import asyncio
 import auth
 import collections
 import playlist_helper
+import re
 import redis_cache
 import spotify
 import ujson
@@ -19,8 +20,6 @@ loading_route = Blueprint('loading_route', __name__)
 @loading_route.websocket("/load")
 async def load_songs_counts():
     access_token = await websocket.receive()
-    log.debug("access_token: ", access_token)
-
     # TODO: Authentication quart-auth ?
 
     try:
@@ -28,7 +27,7 @@ async def load_songs_counts():
         async with aiohttp.ClientSession(json_serialize=ujson) as sess:
             tracks = await sp.current_user_saved_tracks(50, 0, sess)
             # total = result['total']  # TODO: Testing, currently capping at 100
-            total = 100
+            total = 200
             log.info(f"User has a total of {total} tracks")
             await websocket.send(str(total))
 
@@ -57,6 +56,7 @@ async def load_songs_counts():
                 for i in range(0, len(res[0]), 49)])
 
         # map user's saved tracks to redis
+        # TODO: maybe have async gather on genre:len(tids) to eliminate SCARD overhead
         redis_cache.set_user_genre_track_count(access_token)
 
         await websocket.send("STOP")
@@ -68,6 +68,41 @@ async def load_songs_counts():
         raise
 
 
+# TODO: Should we save tracks with no genres? Currently no visibility
+# TODO: Delete unused fields
+async def save_track_to_redis(track: Dict[str, Any], added_at: str, access_token: str) -> bool:
+    """
+    Extracts artist and album id from each saved track and attempts to grab all related genres. Each
+    track is then associated with 0 or more genres.
+    Sets each spotify track id to its name in redis, default (none) TTL expiry
+    """
+    track_obj = track['track']
+
+    log.info(track_obj['name'])
+
+    # clean songs titles with quotes
+    cleaned_tname = re.sub("(\"|\')", "\\\"", track_obj['name'])
+
+    # save song track info to redis
+    track_info = {
+        # @FUTURE: Possibly dump all information? (external url, uri)
+        'album': track_obj['album']['id'],
+        'artists': ujson.dumps([artist['name'] for artist in track_obj['artists']]),
+        'duration': track_obj['duration_ms'],  # in milliseconds
+        # 'is_playable': track_obj['is_playable'],
+        'name': cleaned_tname,
+        'popularity': track_obj['popularity'],
+        'preview_url': track_obj['preview_url'],
+        'spotify_url': track_obj['external_urls']['spotify']
+    }
+
+    # save spotify track in redis
+    success_ts = redis_cache.set_spotify_track(track_obj['id'], track_info)
+    success_ta = redis_cache.set_user_tracks_added_at(access_token, {track_obj['id']: added_at})
+
+    return success_ts & success_ta # artist_ids, album_id
+
+
 async def batch_update_album_genres(sp: spotify.Spotify, sess: aiohttp.ClientSession,
                                     album_ids: List[str], album_track_ids: List[str]) -> bool:
     """Saves uncached album genres to api redis cache and updates user's genre set on
@@ -75,10 +110,6 @@ async def batch_update_album_genres(sp: spotify.Spotify, sess: aiohttp.ClientSes
     albums = await sp.albums(album_ids, sess)
     genre_map = collections.defaultdict(set)
     user_genres = set()
-
-    # if not isinstance(albums, list):
-    #    log.debug("Single album response")
-    #    albums = [albums]
 
     # TODO: consider izip
     for track_id, album in zip(album_track_ids, albums):
@@ -89,18 +120,22 @@ async def batch_update_album_genres(sp: spotify.Spotify, sess: aiohttp.ClientSes
             for genre in album_genres:
                 genre_map[genre].add(track_id)
                 user_genres.add(genre)
-            # save album genres to redis
-            redis_cache.set_spotify_album_genres(album['id'], album_genres)
+        else:
+            log.debug(f'Could not extract album genres from {track_id}')
+            album_genres = ["NA"]
+            genre_map["NA"].add(track_id)
+            user_genres.add("NA")
+
+        # save album genres to redis
+        redis_cache.set_spotify_album_genres(album['id'], album_genres)
 
     token = await sp.get_access_token()
     user_gt_set, user_g_set = True, True
     # save "token+genre" : [track_id] to redis
     if genre_map:
-        print(f"User genre map: {genre_map}")
         user_gt_set = redis_cache.set_user_genre_tracks(token, genre_map)
     # update users genres set
     if user_genres:
-        print(f"User genres: {user_genres}")
         user_g_set = redis_cache.set_user_genres(token, user_genres)
     return user_gt_set & user_g_set
 
@@ -121,19 +156,22 @@ async def batch_update_artist_genres(sp: spotify.Spotify, sess: aiohttp.ClientSe
                 genre_map[genre].add(track_id)
                 user_genres.add(genre)
             # save track genres to redis
-            redis_cache.set_spotify_track_genres(artist['id'], artist_genres)
         else:
+            # TODO: save as N/A genre?
             log.debug(f'Could not extract genres from {track_id}')
+            genre_map["NA"].add(track_id)
+            user_genres.add("NA")
+            artist_genres = ["NA"]
+
+        redis_cache.set_spotify_artist_genres(artist['id'], artist_genres)
 
     token = await sp.get_access_token()
     user_gt_set, user_g_set = True, True
     # save "token+genre" : [track_id] to redis
     if genre_map:
-        print(f"User genre map artists: {genre_map}")
         user_gt_set = redis_cache.set_user_genre_tracks(token, genre_map)
     # update users genres set
     if user_genres:
-        print(f"User genres: {user_genres}")
         user_g_set = redis_cache.set_user_genres(token, user_genres)
     return user_gt_set & user_g_set
 
@@ -146,21 +184,28 @@ async def extract_tracks(sp: spotify.Spotify, sess: aiohttp.ClientSession, track
     album_track_ids = []
     album_ids = []
     genre_set = set()
+    token = await sp.get_access_token()
 
     for track in tracks:
         track_obj = track['track']
+        added_at = track['added_at']
 
         # emit to front end loading page
         await websocket.send(track_obj['name'])
         print(track_obj['name'])
 
-        # save track to redis and form genre map
+        # Conditions to skip # TODO: testing on local files
+        if track_obj['is_local'] or not track_obj['available_markets'] \
+                or 'US' not in track_obj['available_markets']:
+            continue
+
+        # save track and user added date to redis
         if not redis_cache.exists(track_obj['id']):
-            await playlist_helper.liked_songs_genre_map(track)
+            await save_track_to_redis(track, added_at, token)
 
         # artist genres update to redis
         for artist in track_obj['artists']:
-            artist_genres = redis_cache.get_spotify_track_genres(artist['id'])
+            artist_genres = redis_cache.get_spotify_artist_genres(artist['id'])
             if not artist_genres:
                 artist_track_ids.append(track_obj['id'])
                 artist_ids.append(artist['id'])
@@ -199,16 +244,13 @@ async def extract_tracks(sp: spotify.Spotify, sess: aiohttp.ClientSession, track
                 genre_set.add(genre)
 
     # update user genre track list
-    token = await sp.get_access_token()
     if genres_cached:
         # save { "token+genre" : [track_id] } to redis
         redis_cache.set_user_genre_tracks(token, genres_cached)
-        print(f"User genres cached: {genres_cached}")
         # save user genres to redis
         genre_set.update(genres_cached.keys())
     # update users genres
     if genre_set:
-        print(f"User genres main: {genre_set}")
         redis_cache.set_user_genres(token, genre_set)
 
     return artist_ids, artist_track_ids, album_ids, album_track_ids

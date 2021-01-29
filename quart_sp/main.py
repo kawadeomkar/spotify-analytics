@@ -16,12 +16,14 @@ import auth
 import loading
 import player
 import playlist_helper
+import graphs
 
 app = Quart(__name__)
 app.register_blueprint(auth.auth_route)
 app.register_blueprint(loading.loading_route)
 app.register_blueprint(player.player_route)
 app.register_blueprint(playlist_helper.playlist_route)
+app.register_blueprint(graphs.graphs_route)
 
 app.secret_key = os.environ['WSGI_SECRET_KEY']
 
@@ -45,6 +47,7 @@ async def spotify_analytics():
     if validate:
         return await render_template('login.html', login_redir=validate) # redirect(validate)
 
+    # TODO: disable on users not in the US OR test that it could work in other markets
     access_token = session['access_token']
     log.info(f"Access token: {access_token}")
 
