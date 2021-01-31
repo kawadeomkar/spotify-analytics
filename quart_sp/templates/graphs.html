@@ -163,18 +163,18 @@
     console.log("DATA AND STACKED DATA");
     console.log(data);
     var stackedData = d3.stack()
-        .keys(subgroups)(data).map(d => (d.forEach(v => v.key = d.key), d))
+        .keys(subgroups)(data).map(d => (d.forEach(v => {
+            v.key = d.key;
+            v.index = d.index;
+        }), d))
 
     console.log(stackedData);
 
-    // Show the bars
     var sv = svg.append("g")
         .selectAll("g")
         .data(stackedData)
         .join("g")
-        .attr("fill", function (d) {
-            return color(d.index);
-        })
+
 
     sv.selectAll("rect")
         .data(function (d) {
@@ -182,6 +182,12 @@
         })
         .enter()
         .append("rect")
+        .attr("fill", function (d, i) {
+            console.log("INDEX");
+            console.log(d);
+            console.log(i);
+            return color(d.index);
+        })
         .attr("x", function (d) {
             return x(d.data.added_at);
         })
@@ -235,14 +241,17 @@
             if (!isNaN(d[1])) {
                return y(d[1]);
             }})
-        .attr("dy", ".35em")
+        //.attr("dy", ".35em")
+        .attr("fill", "black")
         .style("text-anchor", "middle")
-        .style("stroke", 'black')
+        .style("font-size", "12px")
         .text(function (d) {
             if (!isNaN(d[1])) {
                 return d.key;
             }
-        });
+        })
+        .raise();
+
 
     svg.append("g")
         .attr("transform", "translate(0," + height + ")")
