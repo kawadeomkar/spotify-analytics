@@ -3,4 +3,4 @@ hypercorn==0.11.1
 pandas==1.2.0
 Quart==0.14.1
 redis==3.5.3
-ujson==4.0.1
+ujson==5.4.0
